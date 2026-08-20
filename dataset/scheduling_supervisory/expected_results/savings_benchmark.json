@@ -1,0 +1,46 @@
+{
+  "benchmarks": {
+    "scenario_summer_peak": {
+      "baseline_kwh": 2840.5,
+      "optimized_kwh": 2329.2,
+      "energy_savings_pct": 18.0,
+      "cost_savings_usd": 76.7,
+      "comfort_violation_hours": 0.0,
+      "peak_kw_reduction": 38.4,
+      "agent_breakdown": {
+        "o1_optimum_start_stop": "4.8% savings via 45min delayed start",
+        "o2_space_temperature": "5.2% savings via dynamic deadband floating",
+        "o3_master_ahu_sat": "3.5% fan/compressor balance reset",
+        "o4_chiller_staging": "4.5% staging sequence & lift reduction"
+      }
+    },
+    "scenario_shoulder_mild": {
+      "baseline_kwh": 1950.0,
+      "optimized_kwh": 1462.5,
+      "energy_savings_pct": 25.0,
+      "cost_savings_usd": 73.1,
+      "comfort_violation_hours": 0.0,
+      "peak_kw_reduction": 29.0,
+      "agent_breakdown": {
+        "o1_optimum_start_stop": "8.0% savings via 75min delayed start & 40m coasting",
+        "o2_space_temperature": "6.0% savings via expanded unoccupied deadband",
+        "o3_master_ahu_sat": "7.2% aggressive SAT reset to 16.8°C",
+        "o4_chiller_staging": "3.8% single chiller high-COP point"
+      }
+    },
+    "scenario_hybrid_occupancy": {
+      "baseline_kwh": 2100.0,
+      "optimized_kwh": 1617.0,
+      "energy_savings_pct": 23.0,
+      "cost_savings_usd": 72.45,
+      "comfort_violation_hours": 0.0,
+      "peak_kw_reduction": 32.1,
+      "agent_breakdown": {
+        "o1_optimum_start_stop": "6.5% savings",
+        "o2_space_temperature": "9.5% zone-level setback on empty zones",
+        "o3_master_ahu_sat": "4.0% SAT reset",
+        "o4_chiller_staging": "3.0% staging optimization"
+      }
+    }
+  }
+}

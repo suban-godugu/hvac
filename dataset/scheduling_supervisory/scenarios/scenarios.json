@@ -1,0 +1,59 @@
+[
+  {
+    "id": "scenario_summer_peak",
+    "name": "Summer Heatwave & Peak Demand",
+    "description": "High outdoor temperature (34°C max) with intense afternoon solar gain. Tests Optimum Start pre-cooling, SAT reset optimization without causing coil saturation, and optimal dual-chiller staging.",
+    "duration_hours": 24,
+    "initial_conditions": {
+      "oat_start": 22.5,
+      "oat_peak": 34.2,
+      "occupancy_start": "08:00",
+      "occupancy_end": "18:00",
+      "occupancy_peak_pct": 95,
+      "base_zone_temp": 25.8
+    }
+  },
+  {
+    "id": "scenario_shoulder_mild",
+    "name": "Shoulder Season Mild Day",
+    "description": "Moderate ambient temperatures (14°C to 21°C). High opportunity for aggressive SAT upward reset (up to 17.5°C), coast-down shutdown 45 mins before occupancy ends, and single chiller partial load.",
+    "duration_hours": 24,
+    "initial_conditions": {
+      "oat_start": 13.5,
+      "oat_peak": 21.0,
+      "occupancy_start": "08:00",
+      "occupancy_end": "18:00",
+      "occupancy_peak_pct": 80,
+      "base_zone_temp": 21.5
+    }
+  },
+  {
+    "id": "scenario_hybrid_occupancy",
+    "name": "Hybrid Work & Erratic Occupancy",
+    "description": "Sporadic occupancy with 40% building occupancy on Mondays/Fridays. Demonstrates Zone Temperature Deadband expansion and zone-level setback savings.",
+    "duration_hours": 24,
+    "initial_conditions": {
+      "oat_start": 18.0,
+      "oat_peak": 27.5,
+      "occupancy_start": "09:00",
+      "occupancy_end": "17:00",
+      "occupancy_peak_pct": 42,
+      "base_zone_temp": 23.0
+    }
+  },
+  {
+    "id": "scenario_sensor_drift_safety",
+    "name": "Sensor Fault & Fail-Safe Verification",
+    "description": "Simulates a drifting VAV damper sensor reporting false 100% cooling demand and a frozen OAT sensor. Demonstrates safety guardrails, rogue zone ignoring, and fallback safe setpoints.",
+    "duration_hours": 24,
+    "initial_conditions": {
+      "oat_start": 20.0,
+      "oat_peak": 29.0,
+      "occupancy_start": "08:00",
+      "occupancy_end": "18:00",
+      "occupancy_peak_pct": 75,
+      "base_zone_temp": 23.5,
+      "fault_injected": "ZONE_204_DAMPER_STUCK"
+    }
+  }
+]

@@ -1,0 +1,505 @@
+"""Platform BMS status, discovery, mapping, and telemetry views."""
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, List, Optional
+
+from backend.bms.command_writer import physical_writes_allowed, write_enabled_flag
+from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
+from backend.bms.point_mapper import canonical_catalog, mapping_to_dict
+from backend.services.canonical_telemetry_service import latest_points
+from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source, is_safe_mode
+
+
+def _building() -> Optional[Dict[str, Any]]:
+    try:
+        from database.session import SessionLocal
+        from database.models import Building
+
+        db = SessionLocal()
+        try:
+            b = db.query(Building).first()
+            if b:
+                return {"id": b.id, "name": b.name, "location": b.location}
+        finally:
+            db.close()
+    except Exception:
+        return None
+    return None
+
+
+def _sync_building(site: Dict[str, Any]) -> Dict[str, Any]:
+    building = _building() or {}
+    name = site.get("name") or building.get("name") or "Skyline Corporate Center"
+    location = site.get("location") or building.get("location")
+    try:
+        from database.session import SessionLocal
+        from database.models import Building
+
+        db = SessionLocal()
+        try:
+            row = db.query(Building).first()
+            if row and (row.location != location or row.name != name):
+                row.name = name
+                row.location = location
+                db.commit()
+            if row:
+                building = {"id": row.id, "name": row.name, "location": row.location}
+        finally:
+            db.close()
+    except Exception:
+        building = {**building, "name": name, "location": location}
+    return {**building, "name": name, "location": location}
+
+
+def _facility_and_weather() -> Dict[str, Any]:
+    from backend.services.weather_service import weather_service
+
+    site = weather_service.facility()
+    building = _sync_building(site)
+    weather = weather_service.snapshot()
+    weather["location"] = site.get("location")
+    name = building.get("name")
+    location = building.get("location")
+    return {
+        "building": {
+            "id": building.get("id"),
+            "name": name,
+            "location": location,
+            "timezone": site.get("timezone"),
+            "city": site.get("city"),
+        },
+        "facility": {
+            "name": name,
+            "location": location,
+            "timezone": site.get("timezone"),
+            "city": site.get("city"),
+            "lat": site.get("lat"),
+            "lon": site.get("lon"),
+        },
+        "weather": weather,
+    }
+
+
+def classify_platform_telemetry(points: List[Dict[str, Any]], bms_connected: bool) -> Dict[str, Any]:
+    if not points:
+        status = "SIMULATED" if is_simulation_mode() else "NO_DATA"
+        return {"status": status, "ageSeconds": None, "quality": None, "source": None}
+    newest = points[0]
+    src = newest.get("source")
+    classified = classify_telemetry(
+        {
+            "quality": newest.get("quality"),
+            "age_seconds": newest.get("age_seconds"),
+            "source": src,
+            "raw": newest.get("quality"),
+        },
+        src,
+    )
+    age = classified.get("age_seconds")
+    if is_demo_source(src) or classified.get("demo"):
+        tel = "SIMULATED"
+    elif classified["status"] == "STALE":
+        tel = "STALE"
+    elif classified["status"] == "BAD":
+        tel = "BAD"
+    elif classified["status"] in ("MISSING",):
+        tel = "NO_DATA"
+    elif bms_connected and classified["status"] == "LIVE" and str(src or "").upper() in ("LIVE_BMS", "BMS") and str(newest.get("quality") or "").upper() == "GOOD":
+        if age is None or age <= STALE_SECONDS:
+            tel = "LIVE"
+        else:
+            tel = "STALE"
+    else:
+        tel = "NO_DATA" if bms_connected else ("SIMULATED" if is_simulation_mode() else "NO_DATA")
+    return {
+        "status": tel,
+        "ageSeconds": age,
+        "quality": newest.get("quality"),
+        "source": src,
+        "classified": classified["status"],
+    }
+
+
+def platform_snapshot() -> Dict[str, Any]:
+    from backend.workers.watchdog import watchdog_status
+    from backend.services.simulation_service import sim_service
+
+    mgr = get_connection_manager()
+    health = mgr.health()
+    connected = bool(health.connected)
+    points = latest_points(limit=40)
+    tel = classify_platform_telemetry(points, connected)
+    safe = is_safe_mode()
+    try:
+        mode = getattr(getattr(sim_service, "orchestrator", None), "mode", None)
+        mode_s = getattr(mode, "value", None) or str(mode or "ADVISORY")
+    except Exception:
+        mode_s = "ADVISORY"
+    control = False  # Phase 1 read-only
+    bms_status = "CONNECTED" if connected else "DISCONNECTED"
+    site = _facility_and_weather()
+    return {
+        "safeMode": safe,
+        "bmsConnected": connected,
+        "bms": {
+            "status": bms_status,
+            "protocol": health.protocol,
+            "host": health.host,
+            "port": health.port,
+            "last_connected_at": health.last_connected_at,
+            "last_error": health.message,
+            "lastError": health.message,
+            "code": health.code,
+        },
+        "bmsStatus": bms_status,
+        "telemetry": tel,
+        "telemetryAgeSeconds": tel.get("ageSeconds"),
+        "controlEnabled": control,
+        "writeEnabled": write_enabled_flag() and physical_writes_allowed(),
+        "mode": mode_s,
+        "safety": "SAFE_HOLD" if safe else "PASS",
+        "deploymentMode": os.getenv("HVAC_DEPLOYMENT_MODE", "local"),
+        "bmsMode": "simulation" if is_simulation_mode() else health.protocol,
+        "watchdog": watchdog_status(),
+        "building": site["building"],
+        "facility": site["facility"],
+        "weather": site["weather"],
+        "commissioning": "READ_ONLY",
+    }
+
+
+def bms_status() -> Dict[str, Any]:
+    snap = platform_snapshot()
+    mgr = get_connection_manager()
+    row = mgr.current_row()
+    from database.session import SessionLocal
+    from database.models_bms import BmsDeviceDB, BmsPointDB
+
+    db = SessionLocal()
+    try:
+        n_dev = n_pt = 0
+        if row:
+            n_dev = db.query(BmsDeviceDB).filter(BmsDeviceDB.connection_id == row.id).count()
+            n_pt = (
+                db.query(BmsPointDB)
+                .join(BmsDeviceDB, BmsPointDB.device_id == BmsDeviceDB.id)
+                .filter(BmsDeviceDB.connection_id == row.id)
+                .count()
+            )
+    finally:
+        db.close()
+    return {
+        **snap["bms"],
+        "devices": n_dev,
+        "points": n_pt,
+        "write_enabled": False,
+        "commissioning": "READ_ONLY",
+        "connected": snap["bmsConnected"],
+        "status": snap["bms"]["status"],
+    }
+
+
+def list_devices() -> List[Dict[str, Any]]:
+    from database.session import SessionLocal
+    from database.models_bms import BmsDeviceDB, BmsPointDB
+
+    mgr = get_connection_manager()
+    row = mgr.current_row()
+    if row is None:
+        return []
+    db = SessionLocal()
+    try:
+        devices = db.query(BmsDeviceDB).filter(BmsDeviceDB.connection_id == row.id).all()
+        out = []
+        for d in devices:
+            n = db.query(BmsPointDB).filter(BmsPointDB.device_id == d.id).count()
+            out.append(
+                {
+                    "id": d.id,
+                    "device_identifier": d.device_identifier,
+                    "name": d.name,
+                    "device_type": d.device_type,
+                    "status": d.status,
+                    "points": n,
+                }
+            )
+        return out
+    finally:
+        db.close()
+
+
+def list_points(device_id: str) -> List[Dict[str, Any]]:
+    from database.session import SessionLocal
+    from database.models_bms import BmsPointDB
+
+    db = SessionLocal()
+    try:
+        pts = db.query(BmsPointDB).filter(BmsPointDB.device_id == device_id).all()
+        latest = {p.get("point_id"): p for p in latest_points(limit=200)}
+        out = []
+        for p in pts:
+            cur = latest.get(p.point_identifier) or {}
+            out.append(
+                {
+                    "id": p.id,
+                    "point_identifier": p.point_identifier,
+                    "name": p.name,
+                    "object_type": p.object_type,
+                    "object_instance": p.object_instance,
+                    "register": p.register,
+                    "unit": p.unit,
+                    "readable": bool(p.readable),
+                    "writable": bool(p.writable),
+                    "enabled": bool(p.enabled),
+                    "min_value": p.min_value,
+                    "max_value": p.max_value,
+                    "current_value": cur.get("value"),
+                    "quality": cur.get("quality"),
+                    "source": cur.get("source"),
+                }
+            )
+        return out
+    finally:
+        db.close()
+
+
+def list_mappings() -> List[Dict[str, Any]]:
+    from database.session import SessionLocal
+    from database.models_bms import BmsPointDB, EquipmentPointMappingDB
+
+    db = SessionLocal()
+    try:
+        rows = db.query(EquipmentPointMappingDB).all()
+        latest = latest_points(limit=200)
+        by_qual = {p.get("point_id"): p for p in latest}
+        out = []
+        for row in rows:
+            pt = db.query(BmsPointDB).filter(BmsPointDB.id == row.bms_point_id).first()
+            reading = by_qual.get(f"{row.equipment_id}.{row.canonical_point}")
+            out.append(mapping_to_dict(row, pt, reading))
+        return out
+    finally:
+        db.close()
+
+
+def put_mapping(body: Dict[str, Any]) -> Dict[str, Any]:
+    from database.session import SessionLocal
+    from database.models_bms import BmsPointDB, EquipmentPointMappingDB
+    import uuid
+    from datetime import datetime, timezone
+
+    equipment_id = str(body.get("equipment_id") or "").strip()
+    canonical_point = str(body.get("canonical_point") or "").strip()
+    bms_point_id = str(body.get("bms_point_id") or "").strip()
+    direction = str(body.get("direction") or "READ").strip().upper()
+    safety_enabled = bool(body.get("safety_enabled", True))
+    if not equipment_id or not canonical_point or not bms_point_id:
+        raise ValueError("equipment_id, canonical_point, and bms_point_id are required")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    db = SessionLocal()
+    try:
+        pt = db.query(BmsPointDB).filter(BmsPointDB.id == bms_point_id).first()
+        if pt is None:
+            raise ValueError("Only discovered BMS points can be mapped")
+        if direction in ("READ_WRITE", "WRITE", "RW") and not pt.writable:
+            raise ValueError("Writable mapping requires a writable discovered point")
+        row = (
+            db.query(EquipmentPointMappingDB)
+            .filter(
+                EquipmentPointMappingDB.equipment_id == equipment_id,
+                EquipmentPointMappingDB.canonical_point == canonical_point,
+            )
+            .first()
+        )
+        if row is None:
+            row = EquipmentPointMappingDB(
+                id=f"map_{uuid.uuid4().hex[:12]}",
+                equipment_id=equipment_id,
+                canonical_point=canonical_point,
+                bms_point_id=bms_point_id,
+                direction=direction,
+                safety_enabled=safety_enabled,
+                created_at=now,
+                updated_at=now,
+            )
+            db.add(row)
+        else:
+            row.bms_point_id = bms_point_id
+            row.direction = direction
+            row.safety_enabled = safety_enabled
+            row.updated_at = now
+        db.commit()
+        db.refresh(row)
+        return mapping_to_dict(row, pt)
+    finally:
+        db.close()
+
+
+def mapped_telemetry() -> List[Dict[str, Any]]:
+    maps = list_mappings()
+    latest = {p.get("point_id"): p for p in latest_points(limit=200)}
+    bms_status_label = platform_snapshot()["bms"]["status"]
+    out = []
+    for m in maps:
+        key = m.get("qualified")
+        row = latest.get(key) or {}
+        out.append(
+            {
+                "equipment_id": m["equipment_id"],
+                "point": m["canonical_point"],
+                "value": row.get("value"),
+                "unit": m.get("unit") or row.get("unit"),
+                "quality": row.get("quality") or "MISSING",
+                "source": row.get("source"),
+                "timestamp": row.get("timestamp"),
+                "age_seconds": row.get("age_seconds"),
+                "bms_status": bms_status_label,
+            }
+        )
+    return out
+
+
+def plant_overview() -> Dict[str, List[Dict[str, Any]]]:
+    rows = mapped_telemetry()
+    groups: Dict[str, Dict[str, Dict[str, Any]]] = {"chillers": {}, "ahus": {}, "pumps": {}, "vfds": {}}
+    for r in rows:
+        eid = r["equipment_id"]
+        if eid.upper().startswith("CH"):
+            bucket = "chillers"
+        elif eid.upper().startswith("AHU"):
+            bucket = "ahus"
+        elif eid.upper().startswith("P"):
+            bucket = "pumps"
+        elif eid.upper().startswith("VFD"):
+            bucket = "vfds"
+        else:
+            continue
+        groups[bucket].setdefault(eid, {"equipment_id": eid, "points": {}})
+        val = r["value"]
+        groups[bucket][eid]["points"][r["point"]] = {
+            "value": val,
+            "unit": r.get("unit"),
+            "quality": r.get("quality"),
+            "display": None if val is None else val,
+        }
+    return {k: list(v.values()) for k, v in groups.items()}
+
+
+def agent_groups() -> List[Dict[str, Any]]:
+    snap = platform_snapshot()
+    from backend.services.agent_recommendation_service import build_recommendation
+    from backend.services.agent_telemetry_service import get_agent_context
+
+    groups = [
+        {"id": "scheduling", "title": "Scheduling", "opportunities": ["O1", "O2", "O3", "O4"], "href": "/agents/scheduling"},
+        {"id": "plant-control", "title": "Plant Control", "opportunities": ["O5", "O6", "O7", "O8", "O9"], "href": "/agents/plant-control"},
+        {"id": "ventilation", "title": "Ventilation", "opportunities": ["O11", "O12", "O13"], "href": "/agents/ventilation-airflow"},
+        {"id": "variable-speed", "title": "Variable Speed", "opportunities": ["O14", "O15", "O16"], "href": "/agents/variable-speed"},
+        {"id": "operations", "title": "Operations & Maintenance", "opportunities": ["O17", "O18", "O19", "O20"], "href": "/agents/operations-maintenance"},
+    ]
+    out: List[Dict[str, Any]] = []
+    for g in groups:
+        cards = []
+        statuses = []
+        recs = []
+        sources = []
+        for oid in g["opportunities"]:
+            ctx = get_agent_context(oid)
+            rec = build_recommendation(oid)
+            st = ctx["status"]
+            if st == "WAITING_FOR_TELEMETRY":
+                agent_label = "WAITING FOR TELEMETRY"
+            elif st == "BMS_OFFLINE":
+                agent_label = "BMS OFFLINE"
+            elif st in ("STALE", "BAD_TELEMETRY"):
+                agent_label = "HOLD"
+            elif st == "SAFE_MODE":
+                agent_label = "SAFE MODE"
+            else:
+                agent_label = "READY"
+            statuses.append(agent_label)
+            recs.append(rec.get("recommendation_status"))
+            src = (ctx.get("telemetry") or {}).get("source")
+            classified = (ctx.get("telemetry") or {}).get("classified")
+            if classified == "SIMULATED" or (src and "SIMUL" in str(src).upper()):
+                tel_label = "SIMULATED"
+            elif classified == "LIVE" and src and str(src).upper() in ("LIVE_BMS", "BMS"):
+                tel_label = "LIVE"
+            elif classified == "STALE" or st == "STALE":
+                tel_label = "STALE"
+            else:
+                tel_label = "NO DATA"
+            sources.append(tel_label)
+            cards.append(
+                {
+                    "id": oid,
+                    "status": agent_label,
+                    "telemetry": tel_label,
+                    "recommendation": rec.get("recommendation_status"),
+                    "control": "WRITE DISABLED",
+                    "missing_features": ctx.get("missing_features") or [],
+                }
+            )
+        row = dict(g)
+        if "BMS OFFLINE" in statuses:
+            row["status"] = "BMS OFFLINE"
+        elif all(s == "WAITING FOR TELEMETRY" for s in statuses):
+            row["status"] = "WAITING FOR TELEMETRY"
+        elif all(s == "READY" for s in statuses):
+            row["status"] = "READY"
+        else:
+            row["status"] = "HOLD"
+        row["controlAvailability"] = "WRITE DISABLED"
+        row["bms"] = snap["bms"]["status"]
+        row["telemetry"] = sources[0] if sources else "NO DATA"
+        row["recommendation"] = "AVAILABLE" if any(r == "AVAILABLE" for r in recs) else "UNAVAILABLE"
+        row["ml"] = "ADVISORY"
+        row["cards"] = cards
+        out.append(row)
+    return out
+
+
+def evaluate_safety(context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    from backend.services.hvac_safety_contract import evaluate_dispatch
+
+    ctx = context or {}
+    snap = platform_snapshot()
+    tel = snap.get("telemetry") or {}
+    merged = {
+        "source": tel.get("source") or ctx.get("source"),
+        "telemetry": {
+            "source": tel.get("source"),
+            "quality": tel.get("quality"),
+            "age_seconds": tel.get("ageSeconds"),
+            "raw": tel.get("status"),
+        },
+        "supervisory": {"decision": ctx.get("decision") or "OPTIMIZE", "confidence": ctx.get("confidence")},
+        "safety": {"status": snap.get("safety"), "passed": snap.get("safety") == "PASS"},
+        "current_value": ctx.get("current_value"),
+        "target_value": ctx.get("target_value"),
+        "opportunity_id": ctx.get("opportunity_id"),
+        **ctx,
+    }
+    ok, reason, classified = evaluate_dispatch(merged)
+    return {
+        "allowed": ok,
+        "reason": reason,
+        "code": classified.get("code"),
+        "bms": snap["bms"]["status"],
+        "telemetry": tel.get("status"),
+        "safeMode": snap["safeMode"],
+        "controlEnabled": False,
+        "checks": {
+            "bms_connected": snap["bmsConnected"],
+            "telemetry_live": tel.get("status") == "LIVE",
+            "quality_good": (tel.get("quality") or "").upper() == "GOOD",
+            "fresh": tel.get("status") == "LIVE",
+            "safe_mode": snap["safeMode"],
+            "write_enabled": False,
+        },
+    }
+
+
+def catalog() -> List[Dict[str, str]]:
+    return canonical_catalog()

@@ -1,0 +1,481 @@
+[
+  {
+    "point_id": "AHU-1.SAT",
+    "equipment": "AHU-1",
+    "category": "temperature",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-1.SAT.SETPOINT",
+    "equipment": "AHU-1",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "AHU-1.FAN.SPEED",
+    "equipment": "AHU-1",
+    "category": "vfd_speed",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-1.FAN.POWER",
+    "equipment": "AHU-1",
+    "category": "power",
+    "unit": "kW",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-1.COOLING_VALVE",
+    "equipment": "AHU-1",
+    "category": "actuator",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-101.TEMP",
+    "equipment": "VAV-101",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-101.SETPOINT",
+    "equipment": "VAV-101",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-101.DAMPER",
+    "equipment": "VAV-101",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-101.OCCUPIED",
+    "equipment": "VAV-101",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-102.TEMP",
+    "equipment": "VAV-102",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-102.SETPOINT",
+    "equipment": "VAV-102",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-102.DAMPER",
+    "equipment": "VAV-102",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-102.OCCUPIED",
+    "equipment": "VAV-102",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-103.TEMP",
+    "equipment": "VAV-103",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-103.SETPOINT",
+    "equipment": "VAV-103",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-103.DAMPER",
+    "equipment": "VAV-103",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-103.OCCUPIED",
+    "equipment": "VAV-103",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-104.TEMP",
+    "equipment": "VAV-104",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-104.SETPOINT",
+    "equipment": "VAV-104",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-104.DAMPER",
+    "equipment": "VAV-104",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-104.OCCUPIED",
+    "equipment": "VAV-104",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-105.TEMP",
+    "equipment": "VAV-105",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-105.SETPOINT",
+    "equipment": "VAV-105",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-105.DAMPER",
+    "equipment": "VAV-105",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-105.OCCUPIED",
+    "equipment": "VAV-105",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-106.TEMP",
+    "equipment": "VAV-106",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-106.SETPOINT",
+    "equipment": "VAV-106",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-106.DAMPER",
+    "equipment": "VAV-106",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-106.OCCUPIED",
+    "equipment": "VAV-106",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-2.SAT",
+    "equipment": "AHU-2",
+    "category": "temperature",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-2.SAT.SETPOINT",
+    "equipment": "AHU-2",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "AHU-2.FAN.SPEED",
+    "equipment": "AHU-2",
+    "category": "vfd_speed",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-2.FAN.POWER",
+    "equipment": "AHU-2",
+    "category": "power",
+    "unit": "kW",
+    "writable": false
+  },
+  {
+    "point_id": "AHU-2.COOLING_VALVE",
+    "equipment": "AHU-2",
+    "category": "actuator",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-201.TEMP",
+    "equipment": "VAV-201",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-201.SETPOINT",
+    "equipment": "VAV-201",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-201.DAMPER",
+    "equipment": "VAV-201",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-201.OCCUPIED",
+    "equipment": "VAV-201",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-202.TEMP",
+    "equipment": "VAV-202",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-202.SETPOINT",
+    "equipment": "VAV-202",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-202.DAMPER",
+    "equipment": "VAV-202",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-202.OCCUPIED",
+    "equipment": "VAV-202",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-203.TEMP",
+    "equipment": "VAV-203",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-203.SETPOINT",
+    "equipment": "VAV-203",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-203.DAMPER",
+    "equipment": "VAV-203",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-203.OCCUPIED",
+    "equipment": "VAV-203",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-204.TEMP",
+    "equipment": "VAV-204",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-204.SETPOINT",
+    "equipment": "VAV-204",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-204.DAMPER",
+    "equipment": "VAV-204",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-204.OCCUPIED",
+    "equipment": "VAV-204",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-205.TEMP",
+    "equipment": "VAV-205",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-205.SETPOINT",
+    "equipment": "VAV-205",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-205.DAMPER",
+    "equipment": "VAV-205",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-205.OCCUPIED",
+    "equipment": "VAV-205",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-206.TEMP",
+    "equipment": "VAV-206",
+    "category": "zone_temp",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-206.SETPOINT",
+    "equipment": "VAV-206",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "VAV-206.DAMPER",
+    "equipment": "VAV-206",
+    "category": "damper_pos",
+    "unit": "percent",
+    "writable": false
+  },
+  {
+    "point_id": "VAV-206.OCCUPIED",
+    "equipment": "VAV-206",
+    "category": "occupancy",
+    "unit": "boolean",
+    "writable": false
+  },
+  {
+    "point_id": "PLANT.CHWS",
+    "equipment": "PLANT",
+    "category": "chw_supply",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "PLANT.CHWS.SETPOINT",
+    "equipment": "PLANT",
+    "category": "setpoint",
+    "unit": "degC",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "PLANT.CHWR",
+    "equipment": "PLANT",
+    "category": "chw_return",
+    "unit": "degC",
+    "writable": false
+  },
+  {
+    "point_id": "PLANT.FLOW",
+    "equipment": "PLANT",
+    "category": "flow_rate",
+    "unit": "L/s",
+    "writable": false
+  },
+  {
+    "point_id": "PLANT.TOTAL_TONS",
+    "equipment": "PLANT",
+    "category": "cooling_load",
+    "unit": "Tons",
+    "writable": false
+  },
+  {
+    "point_id": "PLANT.TOTAL_POWER",
+    "equipment": "PLANT",
+    "category": "power",
+    "unit": "kW",
+    "writable": false
+  },
+  {
+    "point_id": "CH-1.CMD",
+    "equipment": "CH-1",
+    "category": "equipment_enable",
+    "unit": "boolean",
+    "writable": true,
+    "priority": 10
+  },
+  {
+    "point_id": "CH-2.CMD",
+    "equipment": "CH-2",
+    "category": "equipment_enable",
+    "unit": "boolean",
+    "writable": true,
+    "priority": 10
+  }
+]

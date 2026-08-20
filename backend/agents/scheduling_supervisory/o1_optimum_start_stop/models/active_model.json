@@ -1,0 +1,21 @@
+{
+  "opportunity_code": "O1",
+  "model_version": "v1.2.0",
+  "dataset_version": "ds-hvac-2026-v1",
+  "created_at": "2026-08-17T20:36:02.169265",
+  "metrics": {
+    "mae_warmup_minutes": 1.87,
+    "r2_score": 0.924,
+    "prediction_error_pct": 9.97,
+    "training_samples": 800,
+    "eval_samples": 200
+  },
+  "parameters": {
+    "alpha_min_per_deg": 9.23,
+    "beta_min_per_deg": 0.97,
+    "base_safety_margin_minutes": 10.0,
+    "tau_decay_hours": 6.8
+  },
+  "status": "ACTIVE",
+  "inference_latency_ms": 1.2
+}

@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r backend/requirements.txt pytest
+      - name: Pytest
+        env:
+          HVAC_START_CONTROL_WORKER: "0"
+          HVAC_ALLOW_CREATE_ALL: "1"
+          HVAC_DEPLOYMENT_MODE: local
+        run: python -m pytest backend/tests/test_p0_security.py backend/tests/test_runtime_contracts.py backend/tests/test_oeh_guide.py -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run test:formatters
+      - run: npm run build

@@ -1,0 +1,21 @@
+{
+  "baseline_policy": {
+    "name": "Fixed Schedule & Constant Setpoint",
+    "description": "Standard static BAS control without supervisory intelligence",
+    "schedule": {
+      "start_time": "06:00",
+      "stop_time": "19:00",
+      "pre_cool_fixed_hours": 2.0
+    },
+    "setpoints": {
+      "space_cooling_sp": 22.0,
+      "space_heating_sp": 21.0,
+      "deadband": 1.0,
+      "ahu_sat_sp": 12.8,
+      "chws_sp": 6.7
+    },
+    "chiller_staging": {
+      "lead_lag_static_threshold": "65% threshold with 20min fixed timer"
+    }
+  }
+}

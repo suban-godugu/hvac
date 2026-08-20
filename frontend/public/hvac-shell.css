@@ -1,0 +1,60 @@
+/* Unhashed shell CSS. Served from /hvac-shell.css so the dark layout
+   still applies if hashed /_next/static/css chunks 404 after a mixed build. */
+html,
+body {
+  background-color: #05080f;
+  color: #e2e8f0;
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+.hvac-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #05080f;
+  color: #e2e8f0;
+}
+
+.hvac-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.hvac-sidebar {
+  width: 18rem;
+  flex-shrink: 0;
+  background: #080e18;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  height: calc(100vh - 4rem);
+  position: sticky;
+  top: 4rem;
+  overflow-y: auto;
+}
+
+.hvac-main {
+  flex: 1;
+  padding: 1.75rem 1.75rem 2.5rem;
+  overflow: auto;
+  width: 100%;
+}

@@ -1,0 +1,1526 @@
+{
+  "total_points": 157,
+  "bms_points": [
+    {
+      "point_id": "AHU-01.SAT.TEMP",
+      "equipment_id": "AHU-01",
+      "category": "supply_air_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.SAT.SETPOINT",
+      "equipment_id": "AHU-01",
+      "category": "supply_air_temperature_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.RAT.TEMP",
+      "equipment_id": "AHU-01",
+      "category": "return_air_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.AIRFLOW.CFM",
+      "equipment_id": "AHU-01",
+      "category": "airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.STATIC_PRESS.PA",
+      "equipment_id": "AHU-01",
+      "category": "static_pressure",
+      "unit": "Pa",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.FAN.SPEED_PCT",
+      "equipment_id": "AHU-01",
+      "category": "fan_speed",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.FAN.POWER_KW",
+      "equipment_id": "AHU-01",
+      "category": "fan_power",
+      "unit": "kW",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.COOLING_VALVE.POS_PCT",
+      "equipment_id": "AHU-01",
+      "category": "cooling_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.HEATING_VALVE.POS_PCT",
+      "equipment_id": "AHU-01",
+      "category": "heating_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.OCCUPANCY.STATUS",
+      "equipment_id": "AHU-01",
+      "category": "occupancy_status",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.START_STOP.CMD",
+      "equipment_id": "AHU-01",
+      "category": "start_stop_command",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.TEMP",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.COOLING_SP",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.HEATING_SP",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.DEADBAND",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.DAMPER_POS_PCT",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.AIRFLOW_CFM",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.CO2_PPM",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-01.OCCUPANCY",
+      "equipment_id": "VAV-101",
+      "zone_id": "ZONE-01",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.TEMP",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.COOLING_SP",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.HEATING_SP",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.DEADBAND",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.DAMPER_POS_PCT",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.AIRFLOW_CFM",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.CO2_PPM",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-02.OCCUPANCY",
+      "equipment_id": "VAV-102",
+      "zone_id": "ZONE-02",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.TEMP",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.COOLING_SP",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.HEATING_SP",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.DEADBAND",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.DAMPER_POS_PCT",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.AIRFLOW_CFM",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.CO2_PPM",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-03.OCCUPANCY",
+      "equipment_id": "VAV-103",
+      "zone_id": "ZONE-03",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.TEMP",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.COOLING_SP",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.HEATING_SP",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.DEADBAND",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.DAMPER_POS_PCT",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.AIRFLOW_CFM",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.CO2_PPM",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-04.OCCUPANCY",
+      "equipment_id": "VAV-104",
+      "zone_id": "ZONE-04",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.TEMP",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.COOLING_SP",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.HEATING_SP",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.DEADBAND",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.DAMPER_POS_PCT",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.AIRFLOW_CFM",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.CO2_PPM",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-05.OCCUPANCY",
+      "equipment_id": "VAV-105",
+      "zone_id": "ZONE-05",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.TEMP",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.COOLING_SP",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.HEATING_SP",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.DEADBAND",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.DAMPER_POS_PCT",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.AIRFLOW_CFM",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.CO2_PPM",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-01.ZONE-06.OCCUPANCY",
+      "equipment_id": "VAV-106",
+      "zone_id": "ZONE-06",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.SAT.TEMP",
+      "equipment_id": "AHU-02",
+      "category": "supply_air_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.SAT.SETPOINT",
+      "equipment_id": "AHU-02",
+      "category": "supply_air_temperature_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.RAT.TEMP",
+      "equipment_id": "AHU-02",
+      "category": "return_air_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.AIRFLOW.CFM",
+      "equipment_id": "AHU-02",
+      "category": "airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.STATIC_PRESS.PA",
+      "equipment_id": "AHU-02",
+      "category": "static_pressure",
+      "unit": "Pa",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.FAN.SPEED_PCT",
+      "equipment_id": "AHU-02",
+      "category": "fan_speed",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.FAN.POWER_KW",
+      "equipment_id": "AHU-02",
+      "category": "fan_power",
+      "unit": "kW",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.COOLING_VALVE.POS_PCT",
+      "equipment_id": "AHU-02",
+      "category": "cooling_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.HEATING_VALVE.POS_PCT",
+      "equipment_id": "AHU-02",
+      "category": "heating_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.OCCUPANCY.STATUS",
+      "equipment_id": "AHU-02",
+      "category": "occupancy_status",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.START_STOP.CMD",
+      "equipment_id": "AHU-02",
+      "category": "start_stop_command",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.TEMP",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.COOLING_SP",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.HEATING_SP",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.DEADBAND",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.DAMPER_POS_PCT",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.AIRFLOW_CFM",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.CO2_PPM",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-07.OCCUPANCY",
+      "equipment_id": "VAV-107",
+      "zone_id": "ZONE-07",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.TEMP",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.COOLING_SP",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.HEATING_SP",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.DEADBAND",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.DAMPER_POS_PCT",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.AIRFLOW_CFM",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.CO2_PPM",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-08.OCCUPANCY",
+      "equipment_id": "VAV-108",
+      "zone_id": "ZONE-08",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.TEMP",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.COOLING_SP",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.HEATING_SP",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.DEADBAND",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.DAMPER_POS_PCT",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.AIRFLOW_CFM",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.CO2_PPM",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-09.OCCUPANCY",
+      "equipment_id": "VAV-109",
+      "zone_id": "ZONE-09",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.TEMP",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.COOLING_SP",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.HEATING_SP",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.DEADBAND",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.DAMPER_POS_PCT",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.AIRFLOW_CFM",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.CO2_PPM",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-10.OCCUPANCY",
+      "equipment_id": "VAV-110",
+      "zone_id": "ZONE-10",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.TEMP",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.COOLING_SP",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.HEATING_SP",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.DEADBAND",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.DAMPER_POS_PCT",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.AIRFLOW_CFM",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.CO2_PPM",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-11.OCCUPANCY",
+      "equipment_id": "VAV-111",
+      "zone_id": "ZONE-11",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.TEMP",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "zone_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.COOLING_SP",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "cooling_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.HEATING_SP",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "heating_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.DEADBAND",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "deadband",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.DAMPER_POS_PCT",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "damper_position",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.AIRFLOW_CFM",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "zone_airflow",
+      "unit": "CFM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.REHEAT_VALVE_PCT",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "reheat_valve",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.CO2_PPM",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "indoor_air_quality",
+      "unit": "PPM",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "AHU-02.ZONE-12.OCCUPANCY",
+      "equipment_id": "VAV-112",
+      "zone_id": "ZONE-12",
+      "category": "zone_occupancy",
+      "unit": "boolean",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CHWS.TEMP",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "chw_supply_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CHWS.SETPOINT",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "chw_supply_setpoint",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CHWR.TEMP",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "chw_return_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.FLOW_RATE.LPS",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "chw_flow_rate",
+      "unit": "L/s",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.TOTAL_LOAD.TONS",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "total_cooling_load",
+      "unit": "Tons",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.TOTAL_POWER.KW",
+      "equipment_id": "CHILLER-PLANT-01",
+      "category": "plant_power",
+      "unit": "kW",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.ENABLE_CMD",
+      "equipment_id": "CH-01",
+      "category": "chiller_enable_command",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.RUN_STATUS",
+      "equipment_id": "CH-01",
+      "category": "chiller_run_status",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.LOAD_TONS",
+      "equipment_id": "CH-01",
+      "category": "chiller_load",
+      "unit": "Tons",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.POWER_KW",
+      "equipment_id": "CH-01",
+      "category": "chiller_power",
+      "unit": "kW",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.EFFICIENCY_KW_PER_TON",
+      "equipment_id": "CH-01",
+      "category": "chiller_efficiency",
+      "unit": "kW/Ton",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.RUNTIME_HOURS",
+      "equipment_id": "CH-01",
+      "category": "chiller_runtime",
+      "unit": "hours",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.ALARM_STATUS",
+      "equipment_id": "CH-01",
+      "category": "chiller_alarm",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.COMP_1A.LOAD_PCT",
+      "equipment_id": "CH-01",
+      "category": "compressor_load",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-01.COMP_1B.LOAD_PCT",
+      "equipment_id": "CH-01",
+      "category": "compressor_load",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.ENABLE_CMD",
+      "equipment_id": "CH-02",
+      "category": "chiller_enable_command",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": true
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.RUN_STATUS",
+      "equipment_id": "CH-02",
+      "category": "chiller_run_status",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.LOAD_TONS",
+      "equipment_id": "CH-02",
+      "category": "chiller_load",
+      "unit": "Tons",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.POWER_KW",
+      "equipment_id": "CH-02",
+      "category": "chiller_power",
+      "unit": "kW",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.EFFICIENCY_KW_PER_TON",
+      "equipment_id": "CH-02",
+      "category": "chiller_efficiency",
+      "unit": "kW/Ton",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.RUNTIME_HOURS",
+      "equipment_id": "CH-02",
+      "category": "chiller_runtime",
+      "unit": "hours",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.ALARM_STATUS",
+      "equipment_id": "CH-02",
+      "category": "chiller_alarm",
+      "unit": "enum",
+      "datatype": "boolean",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.COMP_1A.LOAD_PCT",
+      "equipment_id": "CH-02",
+      "category": "compressor_load",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "CHILLER-PLANT-01.CH-02.COMP_1B.LOAD_PCT",
+      "equipment_id": "CH-02",
+      "category": "compressor_load",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "WEATHER.OAT.TEMP",
+      "equipment_id": "WEATHER-STATION",
+      "category": "outdoor_air_temperature",
+      "unit": "degC",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "WEATHER.HUMIDITY.PCT",
+      "equipment_id": "WEATHER-STATION",
+      "category": "outdoor_relative_humidity",
+      "unit": "pct",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    },
+    {
+      "point_id": "WEATHER.SOLAR.WM2",
+      "equipment_id": "WEATHER-STATION",
+      "category": "solar_irradiance",
+      "unit": "W/m2",
+      "datatype": "float",
+      "readable": true,
+      "writable": false
+    }
+  ]
+}
