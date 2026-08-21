@@ -306,14 +306,20 @@ export function fleetCardFor(
     );
   }
   if (id === 'O20' && om) {
+    const health = om.current?.controlHealthPct;
+    const overrides = om.current?.overrides;
+    const drift = om.current?.driftCount;
+    const controller = om.current?.controllerHealth || om.current?.softwareVersion;
+    const empty = health == null && overrides == null && drift == null && !controller;
     return pack(
       [
-        field('Health', formatPercent(om.current?.controlHealthPct)),
-        field('Overrides', formatDash(om.current?.overrides)),
-        field('Drift', formatDash(om.current?.driftCount)),
+        field('Health', formatPercent(health)),
+        field('Overrides', formatDash(overrides)),
+        field('Drift', formatDash(drift)),
+        field('Controller', formatDash(controller)),
       ],
       {
-        status: om.status,
+        status: empty ? om.status : om.status && om.status !== 'NO DATA' ? om.status : 'REVIEW',
         telemetryLabel: provenanceFromAgent(om as unknown as Record<string, unknown>),
       }
     );

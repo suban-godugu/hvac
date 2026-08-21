@@ -214,6 +214,37 @@ class TestModule(unittest.TestCase):
         self.assertTrue(conflict.get("code"))
         self.assertTrue(conflict.get("message"))
 
+    def test_o20_uses_payload_when_controller_row_missing(self):
+        from backend.agents.operations_maintenance.o20_control_software_engine import evaluate_o20
+        from backend.services.operations_maintenance_opportunity_service import _snapshot
+        from database.models_opportunities import ControllerSoftwareStatusDB
+
+        db = SessionLocal()
+        try:
+            db.query(ControllerSoftwareStatusDB).delete()
+            db.commit()
+            snap = _snapshot(
+                db,
+                "O20",
+                {
+                    "controller_id": "NCE-01",
+                    "software_version": "v4.8.2",
+                    "comm_status": "ONLINE",
+                    "point_count": 100,
+                    "healthy_points": 97,
+                    "override_count": 8,
+                    "drift_count": 3,
+                },
+            )
+            self.assertEqual(snap["controller"]["controller_id"], "NCE-01")
+            out = evaluate_o20(snap)
+            self.assertTrue(out["available"])
+            self.assertNotEqual(out.get("status"), "UNAVAILABLE")
+            self.assertEqual(out.get("override_count"), 8)
+        finally:
+            ensure_om_demo(db, force=False)
+            db.close()
+
     def test_o18_never_equipment_dispatch(self):
         body = get_opportunity("O18")
         ok, reason = dispatch_gate(body)

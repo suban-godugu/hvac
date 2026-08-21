@@ -224,7 +224,12 @@ def _persist_ventilation(by_id: Dict[str, Dict[str, Any]]) -> int:
 def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
     from database.models_om import OmTelemetryDB
     from database.session import SessionLocal
-    from backend.services.operations_maintenance_opportunity_service import OFFICIAL_OM_IDS, _ensure_om_catalog
+    from backend.services.operations_maintenance_opportunity_service import (
+        OFFICIAL_OM_IDS,
+        O20_SIM_PAYLOAD,
+        _ensure_om_catalog,
+        _ensure_om_side_tables,
+    )
 
     hvac_kw = _num(by_id, "CHILLER1.CompressorPower", "AHU-01.SupplyFanPower") or 428.5
     oat = _num(by_id, "WEATHER.OutdoorDryBulb", "SITE.outdoor_air_temperature")
@@ -233,6 +238,7 @@ def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
     db = SessionLocal()
     try:
         _ensure_om_catalog(db)
+        _ensure_om_side_tables(db)
         for oid in OFFICIAL_OM_IDS:
             db.add(
                 OmTelemetryDB(
@@ -251,19 +257,7 @@ def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
                     if oid == "O18"
                     else json.dumps({"filter_dp_rise_pct": 34.0, "fan_power_kw": 14.1, "equipment_health_pct": 87.0, "equipment_id": "AHU-02"})
                     if oid == "O19"
-                    else json.dumps(
-                        {
-                            "config_drift_pct": 2.1,
-                            "exception_count": 3,
-                            "backup_status": "CURRENT",
-                            "point_count": 1284,
-                            "healthy_points": 1247,
-                            "degraded_points": 29,
-                            "override_count": 8,
-                            "drift_count": 3,
-                            "critical_issues": 0,
-                        }
-                    ),
+                    else json.dumps(O20_SIM_PAYLOAD),
                 )
             )
         db.commit()

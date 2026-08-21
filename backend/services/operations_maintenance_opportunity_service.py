@@ -34,6 +34,25 @@ LIVE_SECONDS = int(os.environ.get("OM_LIVE_SECONDS", "90"))
 ALLOW_DEMO = os.environ.get("OM_ALLOW_DEMO", "1") != "0"
 META = {row[0]: (row[3], row[4], row[1]) for row in CATALOG if row[0] in OFFICIAL_OM_IDS}
 
+O20_SIM_PAYLOAD = {
+    "controller_id": "NCE-01",
+    "software_version": "v4.8.2",
+    "firmware_version": "4.8.2",
+    "comm_status": "ONLINE",
+    "health_status": "HEALTHY",
+    "config_drift_pct": 2.1,
+    "exception_count": 3,
+    "backup_status": "CURRENT",
+    "point_count": 1284,
+    "healthy_points": 1247,
+    "degraded_points": 29,
+    "override_count": 8,
+    "drift_count": 3,
+    "critical_issues": 0,
+    "stale_points": 8,
+    "failed_points": 0,
+}
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -83,19 +102,50 @@ def _ensure_om_catalog(db) -> None:
         db.rollback()
 
 
+def _ensure_om_side_tables(db) -> None:
+    """Training / WO / controller rows. Independent of om_telemetry so Vercel hydrate still fills O20."""
+    ts = _now()
+    if not db.query(TrainingProgramDB).first():
+        db.add(TrainingProgramDB(id="TRN-SAT-RESET", topic="SAT reset", program_name="Approved SAT reset strategy", required=True, status="ACTIVE"))
+        db.add(TrainingProgramDB(id="TRN-OVERRIDE", topic="Overrides", program_name="Override-release procedure", required=True, status="OPEN"))
+        db.add(TrainingCompletionDB(program_id="TRN-SAT-RESET", role_label="OPERATOR", completion_pct=72.0, status="IN_PROGRESS"))
+    if not db.query(MaintenanceWorkOrderDB).first():
+        db.add(
+            MaintenanceWorkOrderDB(
+                id="FIND-AHU02-FILTER",
+                equipment_id="AHU-02",
+                maintenance_type="FILTER",
+                status="OPEN",
+                runtime_hours=1840.0,
+                efficiency=0.81,
+                degradation=0.12,
+                priority="P2",
+                recommendation="Inspect/replace AHU-02 filter. Differential pressure elevated versus maintenance baseline.",
+            )
+        )
+    if not db.query(ControllerSoftwareStatusDB).first():
+        db.add(
+            ControllerSoftwareStatusDB(
+                controller_id="NCE-01",
+                software_version="v4.8.2",
+                firmware_version="4.8.2",
+                comm_status="ONLINE",
+                point_quality="GOOD",
+                override_state="NONE",
+                alarm_state="3",
+                control_loop_state="AUTO",
+                last_communication=ts,
+                health_status="HEALTHY",
+            )
+        )
+
+
 def _patch_demo_payloads(db) -> None:
-    """Fill missing DEMO payload keys only. Never writes live BMS values."""
+    """Fill missing DEMO/SIMULATION payload keys only. Never writes live BMS values."""
     patches = {
         "O17": {"target_kw": 410.0},
         "O18": {"affected_users": 14, "energy_impact_kwh_day": 8.4},
-        "O20": {
-            "point_count": 1284,
-            "healthy_points": 1247,
-            "degraded_points": 29,
-            "override_count": 8,
-            "drift_count": 3,
-            "critical_issues": 0,
-        },
+        "O20": dict(O20_SIM_PAYLOAD),
     }
     changed = False
     for oid, patch in patches.items():
@@ -105,7 +155,7 @@ def _patch_demo_payloads(db) -> None:
             .order_by(OmTelemetryDB.id.desc())
             .first()
         )
-        if not row or str(row.source or "").upper() != "DEMO":
+        if not row or str(row.source or "").upper() not in ("DEMO", "SIMULATION", "TEST", "TEST TELEMETRY"):
             continue
         extra: Dict[str, Any] = {}
         if row.payload_json:
@@ -133,8 +183,13 @@ def ensure_om_demo(db=None, force: bool = False) -> None:
         close = True
     try:
         _ensure_om_catalog(db)
+        _ensure_om_side_tables(db)
         if not force and db.query(OmTelemetryDB).first():
             _patch_demo_payloads(db)
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
             return
         ts = _now()
         for oid in OFFICIAL_OM_IDS:
@@ -153,52 +208,10 @@ def ensure_om_demo(db=None, force: bool = False) -> None:
                     else json.dumps({"manual_override_count": 3, "affected_users": 14, "energy_impact_kwh_day": 8.4}) if oid == "O18"
                     else json.dumps({"filter_dp_rise_pct": 34.0, "fan_power_kw": 14.1, "equipment_health_pct": 87.0, "equipment_id": "AHU-02"})
                     if oid == "O19"
-                    else json.dumps({
-                        "config_drift_pct": 2.1,
-                        "exception_count": 3,
-                        "backup_status": "CURRENT",
-                        "point_count": 1284,
-                        "healthy_points": 1247,
-                        "degraded_points": 29,
-                        "override_count": 8,
-                        "drift_count": 3,
-                        "critical_issues": 0,
-                    }),
+                    else json.dumps(O20_SIM_PAYLOAD),
                 )
             )
-        if not db.query(TrainingProgramDB).first():
-            db.add(TrainingProgramDB(id="TRN-SAT-RESET", topic="SAT reset", program_name="Approved SAT reset strategy", required=True, status="ACTIVE"))
-            db.add(TrainingProgramDB(id="TRN-OVERRIDE", topic="Overrides", program_name="Override-release procedure", required=True, status="OPEN"))
-            db.add(TrainingCompletionDB(program_id="TRN-SAT-RESET", role_label="OPERATOR", completion_pct=72.0, status="IN_PROGRESS"))
-        if not db.query(MaintenanceWorkOrderDB).first():
-            db.add(
-                MaintenanceWorkOrderDB(
-                    id="FIND-AHU02-FILTER",
-                    equipment_id="AHU-02",
-                    maintenance_type="FILTER",
-                    status="OPEN",
-                    runtime_hours=1840.0,
-                    efficiency=0.81,
-                    degradation=0.12,
-                    priority="P2",
-                    recommendation="Inspect/replace AHU-02 filter. Differential pressure elevated versus maintenance baseline.",
-                )
-            )
-        if not db.query(ControllerSoftwareStatusDB).first():
-            db.add(
-                ControllerSoftwareStatusDB(
-                    controller_id="NCE-01",
-                    software_version="v4.8.2",
-                    firmware_version="4.8.2",
-                    comm_status="ONLINE",
-                    point_quality="GOOD",
-                    override_state="NONE",
-                    alarm_state="3",
-                    control_loop_state="AUTO",
-                    last_communication=ts,
-                    health_status="HEALTHY",
-                )
-            )
+        _ensure_om_side_tables(db)
         db.commit()
     except Exception:
         db.rollback()
@@ -275,29 +288,28 @@ def _snapshot(db, oid: str, tel: Dict[str, Any]) -> Dict[str, Any]:
         snap.setdefault("equipment_health_pct", tel.get("equipment_health_pct"))
         return snap
     row = db.query(ControllerSoftwareStatusDB).order_by(ControllerSoftwareStatusDB.id.desc()).first()
-    snap["controller"] = None
-    if row:
-        snap["controller"] = {
-            "controller_id": row.controller_id,
-            "software_version": row.software_version,
-            "firmware_version": row.firmware_version,
-            "comm_status": row.comm_status,
-            "health_status": row.health_status,
-            "point_quality": row.point_quality,
-            "override_state": row.override_state,
-            "alarm_state": row.alarm_state,
-            "config_drift_pct": tel.get("config_drift_pct"),
-            "exception_count": tel.get("exception_count"),
-            "backup_status": tel.get("backup_status"),
-            "point_count": tel.get("point_count"),
-            "healthy_points": tel.get("healthy_points"),
-            "degraded_points": tel.get("degraded_points"),
-            "override_count": tel.get("override_count"),
-            "drift_count": tel.get("drift_count"),
-            "critical_issues": tel.get("critical_issues"),
-            "stale_points": tel.get("stale_points"),
-            "failed_points": tel.get("failed_points"),
-        }
+    ctrl = {
+        "controller_id": (row.controller_id if row else None) or tel.get("controller_id"),
+        "software_version": (row.software_version if row else None) or tel.get("software_version"),
+        "firmware_version": (row.firmware_version if row else None) or tel.get("firmware_version"),
+        "comm_status": (row.comm_status if row else None) or tel.get("comm_status"),
+        "health_status": (row.health_status if row else None) or tel.get("health_status"),
+        "point_quality": (row.point_quality if row else None),
+        "override_state": (row.override_state if row else None),
+        "alarm_state": (row.alarm_state if row else None) or tel.get("alarm_status"),
+        "config_drift_pct": tel.get("config_drift_pct"),
+        "exception_count": tel.get("exception_count"),
+        "backup_status": tel.get("backup_status"),
+        "point_count": tel.get("point_count"),
+        "healthy_points": tel.get("healthy_points"),
+        "degraded_points": tel.get("degraded_points"),
+        "override_count": tel.get("override_count"),
+        "drift_count": tel.get("drift_count"),
+        "critical_issues": tel.get("critical_issues"),
+        "stale_points": tel.get("stale_points"),
+        "failed_points": tel.get("failed_points"),
+    }
+    snap["controller"] = ctrl if (ctrl.get("controller_id") or ctrl.get("software_version") or ctrl.get("comm_status")) else None
     return snap
 
 
