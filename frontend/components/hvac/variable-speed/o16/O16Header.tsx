@@ -29,49 +29,51 @@ export function O16Header({
   const safety = safetyRaw || 'NO DATA';
   const building = data?.config?.building_id;
   return (
-    <header className="px-4 pt-4 pb-2 space-y-3">
+    <header className="px-5 pt-5 pb-4 space-y-4">
       <StudioBreadcrumb def={def} />
-      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-        <div>
-          <div className="text-[11px] font-mono text-cyan-400">O16</div>
-          <h1 className="text-xl font-semibold text-slate-100 tracking-tight">{def.title}</h1>
-          <p className="text-sm text-slate-400">{def.description}</p>
-          <p className="text-[11px] font-mono text-slate-500 mt-1">Building {fmtDash(building)}</p>
-        </div>
-        <div className="flex flex-col items-stretch xl:items-end gap-2">
-          <label className="text-[11px] font-mono text-slate-500">
-            Condenser plant
-            <select
-              className="ml-2 bg-[#0c1220] border border-white/10 text-slate-200 px-2 py-1 focus-visible:ring-2 focus-visible:ring-cyan-400"
-              aria-label="Condenser plant"
-              value={selectedId}
-              onChange={(e) => onSelect(e.target.value)}
-            >
-              <option value="all">All registered equipment</option>
-              {equipment.map((e) => (
-                <option key={e.equipment_id || e.name || ''} value={String(e.equipment_id || e.name)}>
-                  {e.name || e.equipment_id}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex flex-wrap gap-2 justify-end" aria-label="O16 operating status">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-cyan-400/80 mb-1.5">O16</div>
+          <h1 className="text-[1.7rem] font-semibold text-white tracking-tight leading-tight">{def.title}</h1>
+          <p className="text-[13px] text-slate-400 mt-1.5 max-w-3xl leading-relaxed">{def.description}</p>
+          <div className="flex flex-wrap gap-1.5 mt-3.5" aria-label="O16 operating status">
             <StatusBadge tone={toneForStatus(bms)}>{`BMS ${bms}`}</StatusBadge>
             <StatusBadge tone={toneForStatus(tel)}>{`Telemetry ${tel}`}</StatusBadge>
             <StatusBadge tone={toneForStatus(fresh)}>{`Data ${fresh}`}</StatusBadge>
-            <StatusBadge tone="neutral">{`Mode ${mode}`}</StatusBadge>
+            <StatusBadge tone="neutral" pulse={false}>{`Mode ${mode}`}</StatusBadge>
             <StatusBadge tone={toneForStatus(safety)}>{`Safety ${safety === 'REJECT' ? 'BLOCK' : safety}`}</StatusBadge>
-            <StatusBadge tone={data?.header?.safe_mode || data?.safe_mode ? 'warn' : 'muted'}>
+            <StatusBadge tone={data?.header?.safe_mode || data?.safe_mode ? 'warn' : 'muted'} pulse={false}>
               SAFE MODE {data?.header?.safe_mode || data?.safe_mode ? 'ON' : 'OFF'}
             </StatusBadge>
-            <StatusBadge tone="muted">Last update {secondsAgo(data?.header?.last_telemetry || data?.evaluated_at)}</StatusBadge>
+            <StatusBadge tone="muted" pulse={false}>
+              Last update {secondsAgo(data?.header?.last_telemetry || data?.evaluated_at)}
+            </StatusBadge>
           </div>
         </div>
+        <label className="text-[11px] font-mono text-slate-500 shrink-0">
+          Condenser plant
+          <select
+            className="ml-2 bg-[#0c1220] border border-white/10 text-slate-200 px-2 py-1 rounded-md focus-visible:ring-2 focus-visible:ring-cyan-400"
+            aria-label="Condenser plant"
+            value={selectedId}
+            onChange={(e) => onSelect(e.target.value)}
+          >
+            <option value="all">All registered equipment</option>
+            {equipment.map((e) => (
+              <option key={e.equipment_id || e.name || ''} value={String(e.equipment_id || e.name)}>
+                {e.name || e.equipment_id}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+      {building ? (
+        <p className="text-[11px] font-mono text-slate-500">Building {fmtDash(building)}</p>
+      ) : null}
       {sim && (
-        <div className="kpi-tile min-h-0 border-amber-500/40" role="status">
-          <div className="text-[11px] font-semibold tracking-wider text-amber-300">BMS OFFLINE — SIMULATED TELEMETRY</div>
-          <div className="text-[11px] text-slate-400 mt-1">Simulation is never LIVE. BMS writes are disabled.</div>
+        <div className="glass-card p-4 border-amber-500/40" role="status">
+          <div className="text-[11px] font-semibold tracking-[0.16em] text-amber-300">BMS OFFLINE — SIMULATED TELEMETRY</div>
+          <div className="text-[13px] text-slate-400 mt-1">Simulation is never LIVE. BMS writes are disabled.</div>
         </div>
       )}
     </header>

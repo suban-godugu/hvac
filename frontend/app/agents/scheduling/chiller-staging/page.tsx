@@ -112,61 +112,61 @@ export default function ChillerStagingPage() {
       {/* 1. KPI SUMMARY (10 Real-Time Central Plant KPIs) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Cooling Load</span>
           <div className="my-1 text-base font-bold font-mono text-white">{kpis.thermal_cooling_load || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Real Tonnage</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Optimal Stage</span>
           <div className="my-1 text-xs font-bold font-mono text-cyan-400 truncate">{kpis.optimal_stage_count || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.lead_chiller || 'From plant evaluation'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">CHWS Reset</span>
           <div className="my-1 text-sm font-bold font-mono text-cyan-400 truncate">{kpis.chws_reset_setpoint || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.chws_float || 'CHWS reset'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Power Shed</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.plant_power_reduction_kw || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Chiller Lift</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Efficiency</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.plant_efficiency || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Centrifugal</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Plant PLR</span>
           <div className="my-1 text-base font-bold font-mono text-purple-400">{kpis.current_plr || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Optimal Band</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Capacity</span>
           <div className="my-1 text-base font-bold font-mono text-sky-400">{kpis.available_capacity || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.capacity_headroom || 'Available capacity'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Stage Status</span>
           <div className="my-1 text-xs font-bold font-mono text-emerald-400 truncate">{kpis.stage_status || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Anti-Cycling</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Comfort</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.comfort_compliance_pct || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">ASHRAE 55</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Telemetry</span>
           <div className="my-1 text-xs font-bold font-mono text-emerald-400 truncate">{kpis.telemetry_freshness || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">&lt; 30s Limit</span>

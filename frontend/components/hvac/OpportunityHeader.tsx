@@ -26,13 +26,13 @@ export const OpportunityHeader: React.FC<OpportunityHeaderProps> = ({
   mlConfidence,
   actions,
 }) => (
-  <div className="px-5 pt-5 pb-3">
+  <div className="px-5 pt-5 pb-4">
     <StudioBreadcrumb def={def} />
     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mt-3">
-      <div>
+      <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-cyan-400/80 mb-1.5">{def.id}</div>
-        <h1 className="text-[1.55rem] font-semibold text-white tracking-tight leading-tight">{def.title}</h1>
-        <p className="text-[13px] text-slate-400 mt-1.5 max-w-2xl leading-relaxed">{def.description}</p>
+        <h1 className="text-[1.7rem] font-semibold text-white tracking-tight leading-tight">{def.title}</h1>
+        <p className="text-[13px] text-slate-400 mt-1.5 max-w-3xl leading-relaxed">{def.description}</p>
         <div className="flex flex-wrap gap-1.5 mt-3.5">
           <StatusBadge tone={toneForStatus(live)}>Telemetry {live || 'NO DATA'}</StatusBadge>
           <StatusBadge tone="neutral" pulse={false}>
@@ -56,7 +56,7 @@ export const OpportunityHeader: React.FC<OpportunityHeaderProps> = ({
           {bms && <StatusBadge tone={toneForStatus(bms)}>{bms}</StatusBadge>}
         </div>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>}
     </div>
   </div>
 );

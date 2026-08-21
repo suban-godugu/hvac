@@ -26,8 +26,8 @@ export function ControlSoftwareDashboard() {
   const data = opp.data ?? { id: 'O20' };
 
   return (
-    <div className="pb-16">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+    <div className="space-y-6 pb-12">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         {opp.isFetching && !opp.data ? (
           <div className="col-span-12 text-[11px] font-mono text-slate-500">Loading O20 telemetry…</div>
         ) : null}

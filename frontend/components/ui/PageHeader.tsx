@@ -47,12 +47,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         )}
         <div className="flex items-start gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400/18 to-cyan-500/5 border border-cyan-400/25 shadow-[0_0_24px_rgba(34,211,238,0.08)] flex items-center justify-center text-cyan-300 shrink-0">
+          <div className="w-11 h-11 rounded-[10px] bg-gradient-to-br from-cyan-400/20 to-cyan-500/5 border border-cyan-400/30 shadow-[var(--glow-cyan)] flex items-center justify-center text-cyan-300 shrink-0">
             <Icon className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[1.65rem] font-semibold text-white tracking-tight leading-tight">{title}</h1>
+              <h1 className="text-[1.7rem] font-semibold text-white tracking-tight leading-tight">{title}</h1>
               {badge && (
                 <StatusBadge tone="neutral" pulse={false}>
                   {badge}

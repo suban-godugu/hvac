@@ -55,8 +55,8 @@ export function O15Dashboard() {
   const awaiting = !dash.data && (dash.isPending || dash.isFetching);
 
   return (
-    <div className="pb-16">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+    <div className="space-y-6 pb-12">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         {awaiting ? (
           <div className="col-span-12 text-[11px] font-mono text-slate-500">Loading O15 telemetry…</div>
         ) : null}

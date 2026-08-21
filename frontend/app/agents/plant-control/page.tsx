@@ -6,6 +6,7 @@ import { fetchPlantControlDashboard, fetchPlantControlActivity, PlantControlDash
 import { SectionDashboard } from '@/components/hvac/SectionDashboard';
 import { getOpportunity, TEMP_RESET_OPPS } from '@/lib/hvac/opportunityConfig';
 import { MlSectionStrip } from '@/components/hvac/MlSectionStrip';
+import { EmptyState } from '@/components/hvac/EmptyState';
 
 export default function PlantControlDashboardPage() {
   const [data, setData] = useState<PlantControlDashboardState | null>(null);
@@ -93,13 +94,15 @@ export default function PlantControlDashboardPage() {
       ]}
     >
       <MlSectionStrip opportunityIds={['O5', 'O6', 'O7', 'O8', 'O9']} />
-      <div className="panel-card p-4">
+      <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-slate-500" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Activity</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Activity</h3>
         </div>
         <div className="space-y-1.5 font-mono text-xs">
-          {activities.length === 0 && <div className="text-slate-500">NO DATA</div>}
+          {activities.length === 0 && (
+            <EmptyState title="NO DATA" detail="No plant-control activity rows were returned." />
+          )}
           {activities.map((act, i) => (
             <div key={act.id || i} className="grid grid-cols-1 sm:grid-cols-[4.5rem_9rem_1fr_5.5rem] gap-1 sm:gap-3 px-2 py-1.5 border border-white/[0.04] text-slate-300">
               <span className="text-cyan-400">{act.opportunity || 'SYS'}</span>

@@ -40,7 +40,7 @@ export function OpportunityWorkspace({
   return (
     <div className={className}>
       <div
-        className="rounded-xl border border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#121c2e] to-[#0d1524] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.22)]"
+        className="studio-chrome"
         style={{ borderTopWidth: 3, borderTopColor: cat.color }}
       >
         <OpportunityHeader def={def} live={live} model={model} bms={bms} ml={ml} mlModel={mlModel} mlConfidence={mlConfidence} actions={actions} />
@@ -78,9 +78,9 @@ export function OpportunityGridChrome({
   const cat = GUIDE_CATS[guideCatForOpportunityId(opportunityId)] || GUIDE_CATS.variablespeed;
 
   return (
-    <div className="col-span-12 space-y-4">
+    <div className="space-y-6 pb-12">
       <div
-        className="rounded-xl border border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#121c2e] to-[#0d1524] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.22)]"
+        className="studio-chrome"
         style={{ borderTopWidth: 3, borderTopColor: cat.color }}
       >
         {hero}
@@ -92,7 +92,7 @@ export function OpportunityGridChrome({
         </Suspense>
       ) : (
         <>
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">{children}</div>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">{children}</div>
           <CanonicalPlantPanel opportunityId={opportunityId} />
           <DispatchSafetyPanel opportunityId={opportunityId} />
           <Suspense fallback={null}>

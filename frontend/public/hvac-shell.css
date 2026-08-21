@@ -44,7 +44,7 @@ select {
 .hvac-sidebar {
   width: 18rem;
   flex-shrink: 0;
-  background: #080e18;
+  background: linear-gradient(180deg, #0a1220 0%, #080e18 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.07);
   height: calc(100vh - 4rem);
   position: sticky;
@@ -57,4 +57,10 @@ select {
   padding: 1.75rem 1.75rem 2.5rem;
   overflow: auto;
   width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .hvac-main {
+    padding: 2rem 2.25rem 3rem;
+  }
 }

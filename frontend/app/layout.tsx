@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import "./design-tokens.css";
 import "./theme.css";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
@@ -53,7 +54,7 @@ export default function RootLayout({
               <Sidebar />
             </Suspense>
             <main className="hvac-main flex-1 px-6 py-7 lg:px-9 lg:py-8 overflow-y-auto w-full">
-              <div className="max-w-[1600px] mx-auto w-full">
+              <div className="max-w-[1600px] mx-auto w-full space-y-0">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </div>
             </main>

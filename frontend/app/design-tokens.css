@@ -1,0 +1,65 @@
+/**
+ * HVAC Control Center — design tokens (Figma-ready).
+ * Source of truth for shell polish when Figma MCP is disconnected.
+ * Map these 1:1 to Figma variables once the plugin is authenticated.
+ */
+:root {
+  /* Surfaces */
+  --bg-primary: #05080f;
+  --bg-elevated: #070d18;
+  --bg-surface: #0a101c;
+  --bg-surface-hover: #121a2c;
+  --bg-card: #0d1524;
+  --bg-card-top: rgba(16, 24, 40, 0.94);
+  --bg-sidebar: #080e18;
+  --bg-header: rgba(7, 13, 24, 0.9);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-muted: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(34, 211, 238, 0.32);
+  --border-strong: rgba(34, 211, 238, 0.4);
+
+  /* Accent */
+  --accent-cyan: #22d3ee;
+  --accent-cyan-soft: rgba(34, 211, 238, 0.12);
+  --accent-cyan-mid: rgba(34, 211, 238, 0.2);
+
+  /* Category rails */
+  --cat-scheduling: #f0a93a;
+  --cat-plant: #4fd1c5;
+  --cat-ventilation: #5b9bd5;
+  --cat-variablespeed: #9c7bdb;
+  --cat-om: #6fcf97;
+
+  /* Status */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+
+  /* Type */
+  --text-primary: #f1f5f9;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --text-accent: #a5f3fc;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+
+  /* Spacing rhythm */
+  --space-page-y: 1.75rem;
+  --space-page-x: 1.75rem;
+  --space-section: 1.5rem;
+  --header-h: 4rem;
+  --sidebar-w: 18rem;
+
+  /* Elevation */
+  --card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 16px 40px rgba(0, 0, 0, 0.36);
+  --glow-cyan: 0 0 28px rgba(34, 211, 238, 0.1);
+}

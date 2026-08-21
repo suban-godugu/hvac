@@ -117,43 +117,43 @@ export default function OptimumStartStopPage() {
       {/* 1. KPI SUMMARY (12 Real-Time Optimum Start/Stop Metrics) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Start Delay</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.optimized_start_delay || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.scheduled_start || '—'} → {kpis.optimized_start || 'NO DATA'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Coast Stop</span>
           <div className="my-1 text-base font-bold font-mono text-cyan-400">{kpis.optimized_coast_stop || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.scheduled_stop || '—'} → {kpis.optimized_stop || 'NO DATA'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Runtime Saved</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.daily_runtime_saved || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">From pipeline (not assumed verified)</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Model Confidence</span>
           <div className="my-1 text-base font-bold font-mono text-purple-400">{kpis.model_confidence || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.thermal_model_status || 'MODEL NOT READY'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Zone Temp</span>
           <div className="my-1 text-base font-bold font-mono text-white">{kpis.current_zone_temp || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Target {kpis.target_temp || 'NO DATA'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Target Reached</span>
           <div className="my-1 text-base font-bold font-mono text-cyan-400">{kpis.predicted_target_reached || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Predicted from model</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Scheduled Window</span>
           <div className="my-1 text-xs font-bold font-mono text-slate-300">
             {kpis.scheduled_start && kpis.scheduled_stop ? `${kpis.scheduled_start} – ${kpis.scheduled_stop}` : 'NO DATA'}
@@ -161,31 +161,31 @@ export default function OptimumStartStopPage() {
           <span className="text-[9px] text-slate-500">Configured baseline</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Occupancy Window</span>
           <div className="my-1 text-xs font-bold font-mono text-cyan-400">{kpis.occupancy_window || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Tenant Schedule</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Optimized Start</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.optimized_start || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Selected candidate</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Optimized Stop</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.optimized_stop || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">Passive Drift</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Comfort</span>
           <div className="my-1 text-base font-bold font-mono text-emerald-400">{kpis.comfort_compliance_pct || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">{kpis.comfort_compliance || 'NO DATA'}</span>
         </div>
 
-        <div className="glass-card p-3 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Telemetry</span>
           <div className="my-1 text-xs font-bold font-mono text-emerald-400">{kpis.telemetry_freshness || 'NO DATA'}</div>
           <span className="text-[9px] text-slate-500">&lt; 30s Limit</span>

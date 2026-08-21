@@ -63,10 +63,10 @@ export const Sidebar: React.FC = () => {
   else if (onTempReset && (resetMode === 'CHW' || resetMode === '')) effectiveReset = 'CHW';
 
   const item = (active: boolean) =>
-    `flex items-center gap-2 px-2.5 py-1.5 text-[11.5px] border-l-2 rounded-r-md transition-colors ${
+    `flex items-center gap-2 px-2.5 py-[7px] text-[11.5px] border-l-2 rounded-r-md transition-colors ${
       active
-        ? 'border-cyan-400 text-cyan-100 bg-cyan-500/[0.1] font-semibold'
-        : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.035]'
+        ? 'border-cyan-400 text-cyan-100 bg-cyan-500/[0.12] font-semibold'
+        : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
     }`;
 
   const Group: React.FC<{
@@ -80,7 +80,7 @@ export const Sidebar: React.FC = () => {
     <div className="pt-1">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[12px] font-semibold text-slate-300 hover:text-white rounded-md"
+        className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[12px] font-semibold text-slate-300 hover:text-white rounded-md hover:bg-white/[0.03]"
       >
         <span className="flex items-center gap-2 min-w-0">
           <span style={{ color }}>{icon}</span>
@@ -115,8 +115,8 @@ export const Sidebar: React.FC = () => {
   const om = opportunitiesForSection('operations');
 
   return (
-    <aside className="hvac-sidebar w-72 bg-[#080e18] border-r border-white/[0.07] flex flex-col select-none h-[calc(100vh-4rem)] sticky top-16 overflow-hidden">
-      <div className="px-4 py-3.5 border-b border-white/[0.06] shrink-0">
+    <aside className="hvac-sidebar w-72 border-r border-white/[0.07] flex flex-col select-none h-[calc(100vh-4rem)] sticky top-16 overflow-hidden">
+      <div className="px-4 py-3.5 border-b border-white/[0.06] shrink-0 bg-gradient-to-b from-cyan-500/[0.06] to-transparent">
         <div className="text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">Control Center</div>
         <div className="text-[11px] font-medium text-slate-300 mt-0.5">Twenty supervisory opportunities</div>
       </div>
@@ -259,7 +259,7 @@ export const Sidebar: React.FC = () => {
           ))}
         </Group>
       </nav>
-      <div className="shrink-0 border-t border-white/[0.06] px-3 py-2.5 flex items-center gap-2 bg-[#070c16]">
+      <div className="shrink-0 border-t border-white/[0.06] px-3 py-2.5 flex items-center gap-2 bg-[color:var(--bg-elevated)]">
         <StatusBadge tone={bmsStatus === 'CONNECTED' ? 'live' : 'muted'} pulse={bmsStatus === 'CONNECTED'}>
           BMS {bmsStatus}
         </StatusBadge>

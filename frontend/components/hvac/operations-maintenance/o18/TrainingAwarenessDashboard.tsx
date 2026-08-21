@@ -25,8 +25,8 @@ export function TrainingAwarenessDashboard() {
   const dashData = dash.data;
 
   return (
-    <div className="pb-16">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+    <div className="space-y-6 pb-12">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         {opp.isFetching && !opp.data ? (
           <div className="col-span-12 text-[11px] font-mono text-slate-500">Loading O18 telemetry…</div>
         ) : null}

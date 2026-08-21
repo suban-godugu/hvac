@@ -44,10 +44,10 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   const statusText = status || emptyTitle || 'AWAITING TELEMETRY';
 
   return (
-    <Link href={href} className="glass-card flex flex-col justify-between p-4 group">
+    <Link href={href} className="glass-card flex flex-col justify-between p-4 group hover:-translate-y-0.5">
       <div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border border-cyan-400/25 bg-cyan-500/10 text-cyan-300 tracking-wide">
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border border-cyan-400/30 bg-cyan-500/10 text-cyan-300 tracking-wide">
             {code}
           </span>
           <StatusBadge tone={toneForStatus(statusText)} pulse={false}>
@@ -80,7 +80,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
 
       <div className="space-y-2">
         {impactLabel && (
-          <div className="p-2 rounded-lg bg-[#05080f]/80 border border-white/[0.06] flex items-center justify-between text-[11px]">
+          <div className="p-2 rounded-[10px] bg-[color:var(--bg-primary)]/80 border border-white/[0.06] flex items-center justify-between text-[11px]">
             <span className="text-slate-500">{impactLabel}</span>
             <span className="text-cyan-300 font-mono font-semibold">{emptyLabel(impactValue, emptyTitle || 'AWAITING TELEMETRY')}</span>
           </div>

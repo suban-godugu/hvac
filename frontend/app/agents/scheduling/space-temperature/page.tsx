@@ -107,49 +107,49 @@ export default function SpaceTemperaturePage() {
       {/* 1. KPI SUMMARY (8 KPIs: 4 Existing + 4 New) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3.5">
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Occupied SP</span>
           <div className="my-1.5 text-base font-bold font-mono text-cyan-400">{kpis.avg_occupied_setpoint || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">+1.0°C Float</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Deadband Width</span>
           <div className="my-1.5 text-base font-bold font-mono text-emerald-400">{kpis.deadband_width || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">Zero Overlap</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Unoccupied Setback</span>
           <div className="my-1.5 text-base font-bold font-mono text-amber-400">{kpis.unoccupied_setback || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">±4.0°C Band</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Terminal Shed</span>
           <div className="my-1.5 text-base font-bold font-mono text-emerald-400">{kpis.terminal_power_shed_kw || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">Reheat Cut</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Comfort Compliance</span>
           <div className="my-1.5 text-base font-bold font-mono text-emerald-400">{kpis.comfort_compliance_pct || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">ASHRAE 55</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Zones Optimized</span>
           <div className="my-1.5 text-base font-bold font-mono text-sky-400">{kpis.zones_optimized || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">Active Float</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Temp Error</span>
           <div className="my-1.5 text-base font-bold font-mono text-slate-200">{kpis.avg_temp_error || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">±0.2°C Target</span>
         </div>
 
-        <div className="glass-card p-3.5 flex flex-col justify-between">
+        <div className="glass-card p-4 flex flex-col justify-between">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</span>
           <div className="my-1.5 text-base font-bold font-mono text-emerald-400">{kpis.optimization_status || 'NO DATA'}</div>
           <span className="text-[10px] text-slate-400">Closed-Loop</span>

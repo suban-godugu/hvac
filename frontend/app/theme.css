@@ -1,7 +1,7 @@
 html,
 body {
-  background-color: #05080f;
-  color: #e2e8f0;
+  background-color: var(--bg-primary, #05080f);
+  color: var(--text-secondary, #e2e8f0);
   min-height: 100%;
 }
 

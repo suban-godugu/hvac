@@ -84,7 +84,7 @@ function LivePlant({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {groups.map((g) =>
             g.rows.map((row) => (
-              <div key={row.equipment_id} className="panel-card p-4 space-y-2.5">
+              <div key={row.equipment_id} className="glass-card p-4 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-[10px] font-semibold tracking-[0.14em] uppercase text-slate-500">{g.title}</div>
                   <div className="text-[10px] font-mono text-slate-600">{row.equipment_id}</div>
@@ -253,13 +253,13 @@ export default function FleetOverviewPage() {
         const sectionCards = cards.filter((o) => o.section === section.id);
         return (
           <section key={section.id} className="space-y-3">
-            <div className="panel-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="glass-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="w-8 h-8 rounded-lg border border-cyan-400/20 bg-cyan-500/10 text-cyan-300 flex items-center justify-center">
                     <Icon className="w-4 h-4" />
                   </span>
-                  <h2 className="text-[15px] font-semibold text-white">{section.title}</h2>
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{section.title}</h2>
                   <StatusBadge tone="neutral" pulse={false}>
                     {sectionCards.map((c) => c.id).join(' · ')}
                   </StatusBadge>

@@ -6,6 +6,7 @@ import { Brain } from 'lucide-react';
 import { apiJson } from '@/lib/api/client';
 import { StatusBadge } from '@/components/hvac/StatusBadge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { EmptyState } from '@/components/hvac/EmptyState';
 
 type Filter =
   | 'all'
@@ -98,8 +99,8 @@ export default function MlRegistryPage() {
       </div>
 
       {rows.some((r) => r.missing_dataset) ? (
-        <section className="kpi-tile space-y-2">
-          <div className="text-[10px] font-mono tracking-[0.18em] text-amber-300">MISSING DATASETS</div>
+        <section className="glass-card p-4 space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-300">MISSING DATASETS</div>
           <ul className="text-[12px] space-y-1 text-slate-300">
             {rows
               .filter((r) => r.missing_dataset)
@@ -112,15 +113,14 @@ export default function MlRegistryPage() {
         </section>
       ) : null}
       {q.isError && rows.length === 0 ? (
-        <div className="kpi-tile" role="alert">
-          DATA SOURCE ERROR — ML registry unavailable.{' '}
-          <button type="button" className="text-cyan-300 underline" onClick={() => q.refetch()}>
-            Retry
-          </button>
-        </div>
+        <EmptyState
+          title="DATA SOURCE ERROR"
+          detail="ML registry unavailable."
+          onRetry={() => q.refetch()}
+        />
       ) : null}
 
-      <div className="overflow-x-auto panel-card">
+      <div className="overflow-x-auto glass-card">
         <table className="bms-table">
           <thead className="text-slate-500 text-left">
             <tr className="border-b border-white/10">
@@ -182,16 +182,19 @@ export default function MlRegistryPage() {
           </tbody>
         </table>
         {!q.isLoading && filtered.length === 0 ? (
-          <div className="p-4 text-slate-500">
-            {rows.length === 0
-              ? 'NO DATA'
-              : `No opportunities in this filter (${rows.length} in registry). Switch to All.`}
-          </div>
+          <EmptyState
+            title="NO DATA"
+            detail={
+              rows.length === 0
+                ? 'No ML registry rows were returned.'
+                : `No opportunities in this filter (${rows.length} in registry). Switch to All.`
+            }
+          />
         ) : null}
       </div>
 
       {detail ? (
-        <section className="kpi-tile space-y-3">
+        <section className="glass-card p-4 space-y-3">
           <div className="text-[10px] font-mono tracking-[0.18em] text-violet-300">OPPORTUNITY DETAIL · {detail.opportunity_id}</div>
           <dl className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
             <div>

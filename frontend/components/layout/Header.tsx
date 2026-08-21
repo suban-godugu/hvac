@@ -171,10 +171,10 @@ export const Header: React.FC = () => {
     telemetryAge != null ? (telemetryAge < 1 ? '<1s' : `${Math.round(telemetryAge)}s`) : '—';
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-[#070d18]/88 backdrop-blur-xl border-b border-white/[0.07] px-5 lg:px-6 flex items-center select-none">
+    <header className="sticky top-0 z-40 h-16 bg-[color:var(--bg-header)] backdrop-blur-xl border-b border-white/[0.07] px-5 lg:px-7 flex items-center select-none shadow-[0_1px_0_rgba(34,211,238,0.06)]">
       <div className="flex items-center justify-between w-full gap-4">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
-          <div className="w-9 h-9 rounded-xl border border-cyan-400/25 bg-gradient-to-br from-cyan-400/20 to-cyan-500/5 shadow-[0_0_24px_rgba(34,211,238,0.12)] flex items-center justify-center text-cyan-300">
+          <div className="w-9 h-9 rounded-[10px] border border-cyan-400/30 bg-gradient-to-br from-cyan-400/22 to-cyan-500/5 shadow-[var(--glow-cyan)] flex items-center justify-center text-cyan-300">
             <Cpu className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -189,7 +189,7 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="hidden lg:flex items-center gap-2">
-          <div className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/[0.07] bg-white/[0.03] text-[11px] font-mono text-slate-300">
+          <div className="flex items-center gap-2 h-8 px-3 rounded-[10px] border border-white/[0.07] bg-white/[0.035] text-[11px] font-mono text-slate-300">
             {dayIcon}
             <span className="text-slate-200">{facilityTime.dayState}</span>
             <span className="text-slate-600">·</span>
@@ -197,7 +197,7 @@ export const Header: React.FC = () => {
             <span className="text-slate-600">·</span>
             <span className="text-slate-400">{humidity != null ? `RH ${Math.round(humidity)}%` : 'RH —'}</span>
           </div>
-          <div className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/[0.07] bg-white/[0.03] text-[11px] font-mono text-slate-200">
+          <div className="flex items-center gap-2 h-8 px-3 rounded-[10px] border border-white/[0.07] bg-white/[0.035] text-[11px] font-mono text-slate-200">
             <Clock className="w-3.5 h-3.5 text-slate-500" />
             <span className="font-semibold tabular-nums tracking-wide">{facilityTime.timeStr || '—'}</span>
             <span className="text-slate-500">
@@ -207,7 +207,7 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden md:flex h-8 rounded-lg border border-white/[0.08] bg-[#0d1524] p-0.5">
+          <div className="hidden md:flex h-8 rounded-[10px] border border-white/[0.08] bg-[color:var(--bg-card)] p-0.5">
             <button
               type="button"
               onClick={() => setPlant('DATASET')}
@@ -241,7 +241,7 @@ export const Header: React.FC = () => {
           <select
             value={agentMode}
             onChange={(e) => setAgentMode(e.target.value as AgentMode)}
-            className="h-8 rounded-lg bg-[#0d1524] border border-white/[0.08] px-2 text-[11px] font-semibold text-cyan-300 focus:outline-none"
+            className="h-8 rounded-[10px] bg-[color:var(--bg-card)] border border-white/[0.08] px-2 text-[11px] font-semibold text-cyan-300 focus:outline-none"
             aria-label="Agent mode"
           >
             <option value="AUTO" className="bg-[#0a101c]">
