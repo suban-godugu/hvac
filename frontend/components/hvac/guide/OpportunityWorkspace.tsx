@@ -40,7 +40,7 @@ export function OpportunityWorkspace({
   return (
     <div className={className}>
       <div
-        className="studio-chrome"
+        className="studio-chrome w-full min-w-0"
         style={{ borderTopWidth: 3, borderTopColor: cat.color }}
       >
         <OpportunityHeader def={def} live={live} model={model} bms={bms} ml={ml} mlModel={mlModel} mlConfidence={mlConfidence} actions={actions} />
@@ -78,9 +78,9 @@ export function OpportunityGridChrome({
   const cat = GUIDE_CATS[guideCatForOpportunityId(opportunityId)] || GUIDE_CATS.variablespeed;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="col-span-12 w-full min-w-0 space-y-6">
       <div
-        className="studio-chrome"
+        className="studio-chrome w-full min-w-0"
         style={{ borderTopWidth: 3, borderTopColor: cat.color }}
       >
         {hero}
@@ -92,7 +92,7 @@ export function OpportunityGridChrome({
         </Suspense>
       ) : (
         <>
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">{children}</div>
+          <div className="grid w-full min-w-0 grid-cols-1 xl:grid-cols-12 gap-4">{children}</div>
           <CanonicalPlantPanel opportunityId={opportunityId} />
           <DispatchSafetyPanel opportunityId={opportunityId} />
           <Suspense fallback={null}>

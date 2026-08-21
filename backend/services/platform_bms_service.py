@@ -492,6 +492,7 @@ def agent_groups() -> List[Dict[str, Any]]:
                     "telemetry": tel_label,
                     "recommendation": rec.get("recommendation_status"),
                     "control": ctrl,
+                    "kind": spec.get("kind") or "CONTROL",
                     "missing_features": ctx.get("missing_features") or [],
                 }
             )
@@ -504,7 +505,10 @@ def agent_groups() -> List[Dict[str, Any]]:
             row["status"] = "READY"
         else:
             row["status"] = "HOLD"
-        row["controlAvailability"] = control_writes_status()
+        if cards and all(str(c.get("control") or "").upper().find("DISABLED") >= 0 for c in cards):
+            row["controlAvailability"] = "WRITE DISABLED"
+        else:
+            row["controlAvailability"] = control_writes_status()
         row["bms"] = snap["bms"]["status"]
         row["telemetry"] = sources[0] if sources else "NO DATA"
         row["recommendation"] = "AVAILABLE" if any(r == "AVAILABLE" for r in recs) else "UNAVAILABLE"

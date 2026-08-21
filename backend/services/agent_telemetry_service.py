@@ -178,7 +178,11 @@ def get_agent_context(
         "features": features,
         "missing_features": missing,
         "status": status,
-        "control": "WRITE_ENABLED" if physical_writes_allowed() or simulated_writes_allowed() else "WRITE_DISABLED",
+        "control": (
+            "WRITE_DISABLED"
+            if not spec.get("control")
+            else ("WRITE_ENABLED" if physical_writes_allowed() or simulated_writes_allowed() else "WRITE_DISABLED")
+        ),
         "kind": spec.get("kind") or "CONTROL",
         "safeMode": safe,
         "bmsConnected": connected,

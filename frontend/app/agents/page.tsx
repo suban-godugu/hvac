@@ -67,6 +67,7 @@ export default function AgentsPage() {
               telemetry: string;
               recommendation: string;
               control: string;
+              kind?: string;
             }[];
           }) => (
             <section key={g.id} className="space-y-3">
@@ -119,6 +120,10 @@ export default function AgentsPage() {
                         <div className="flex justify-between gap-2">
                           <span>AGENT</span>
                           <span className="text-slate-200">{card.status}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>KIND</span>
+                          <span className="text-slate-200 text-right">{card.kind || 'CONTROL'}</span>
                         </div>
                         <div className="flex justify-between gap-2">
                           <span>RECOMMENDATION</span>
