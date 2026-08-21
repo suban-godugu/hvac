@@ -151,6 +151,59 @@ _EXTRA: Dict[str, Tuple[str, Optional[str], float]] = {
     "CW.WetBulb": ("SITE", "°C", 22.0),
     "CW.CompressorState": ("CH-01", None, 1.0),
     "CW.CoolingCall": ("CH-01", None, 1.0),
+    "AHU-01.ReturnAirflow": ("AHU-01", "CFM", 7350.0),
+    "AHU-01.OutdoorAirflow": ("AHU-01", "CFM", 2400.0),
+    "AHU-01.ExhaustAirflow": ("AHU-01", "CFM", 850.0),
+    "AHU-01.SupplyFanVFD": ("AHU-01", "Hz", 54.0),
+    "AHU-01.SupplyFanPower": ("AHU-01", "kW", 8.4),
+    "AHU-01.ReturnFanPower": ("AHU-01", "kW", 4.2),
+    "AHU-01.DuctStaticPressure": ("AHU-01", "in.w.c.", 1.45),
+    "AHU-01.BuildingDiffPressure": ("AHU-01", "in.w.c.", 0.012),
+    "AHU-01.ReturnAirDamper": ("AHU-01", "%", 80.0),
+    "AHU-01.MixedAirTemp": ("AHU-01", "°C", 22.7),
+    "ZONE.AvgCO2": ("ZONE-01", "ppm", 560.0),
+    "ZONE.MaxCO2": ("ZONE-01", "ppm", 640.0),
+    "ZONE.OutdoorCO2": ("ZONE-01", "ppm", 415.0),
+    "SCHW.ValveAvg": ("P-01", "%", 62.0),
+    "SCHW.Load": ("CH-01", "%", 68.0),
+    "SCHW.PumpsRunning": ("P-01", None, 1.0),
+    "VFD-01.speed": ("VFD-01", "%", 62.0),
+    "VFD-01.frequency": ("VFD-01", "Hz", 42.0),
+    "VFD-01.power": ("VFD-01", "kW", 9.2),
+    "AHU1.DuctStaticPressure": ("AHU-01", "in.w.c.", 1.45),
+    "AHU1.StaticPressureSetpoint": ("AHU-01", "in.w.c.", 1.40),
+    "AHU1.SupplyFanPower": ("AHU-01", "kW", 8.4),
+    "AHU1.SupplyAirflow": ("AHU-01", "CFM", 7800.0),
+    "VAV-101.DamperPosition": ("VAV-101", "%", 58.0),
+    "VAV-102.DamperPosition": ("VAV-102", "%", 48.0),
+    "VAV-103.DamperPosition": ("VAV-103", "%", 65.0),
+    "VAV-104.DamperPosition": ("VAV-104", "%", 52.0),
+    "VAV-105.DamperPosition": ("VAV-105", "%", 62.0),
+    "VAV-106.DamperPosition": ("VAV-106", "%", 15.0),
+    "VAV-107.DamperPosition": ("VAV-107", "%", 95.0),
+    "VAV-108.DamperPosition": ("VAV-108", "%", 55.0),
+    "VAV101.DamperPosition": ("VAV-101", "%", 58.0),
+    "HHW.SupplyTemp": ("HHW-01", "°C", 52.0),
+    "HHW.ReturnTemp": ("HHW-01", "°C", 42.0),
+    "HHW.SupplySetpoint": ("HHW-01", "°C", 50.0),
+    "HHW.PumpPower": ("P-01", "kW", 4.2),
+    "WEATHER.OutdoorAirTemp": ("SITE", "°C", 26.1),
+    "CHW.SupplyTemp": ("CH-01", "°C", 7.2),
+    "CHW.ReturnTemp": ("CH-01", "°C", 12.4),
+    "CHW.SupplySetpoint": ("CH-01", "°C", 7.0),
+    "CHW.PlantFlow": ("CH-01", "GPM", 338.0),
+    "CHILLER1.CompressorPower": ("CH-01", "kW", 40.8),
+    "CHW.SecondaryPumpPower": ("P-01", "kW", 8.5),
+    "CWS.SupplyTemp": ("CW-01", "°C", 29.0),
+    "CWR.ReturnTemp": ("CW-01", "°C", 34.0),
+    "CWS.SupplySetpoint": ("CW-01", "°C", 29.5),
+    "WEATHER.WetBulbTemp": ("SITE", "°C", 22.0),
+    "CT1.FanPower": ("CW-01", "kW", 10.5),
+    "CWP1.PumpPower": ("P-01", "kW", 5.5),
+    "REF.SuctionPressure": ("CH-01", "psig", 64.2),
+    "REF.SuctionTemp": ("CH-01", "°C", 4.5),
+    "REF.EvaporatorSuperheat": ("CH-01", "°C", 6.2),
+    "REF.EvapTemp": ("CH-01", "°C", 4.2),
 }
 
 
@@ -231,6 +284,13 @@ def publish_once(timestamp: Optional[datetime] = None, tick: Optional[float] = N
             value = _extra_value(pid, float(base), drift, oat, rh)
         _emit(pid, value, unit, eq, timestamp=timestamp)
         n += 1
+    if timestamp is None:
+        try:
+            from backend.services.dataset_persist_service import persist_dataset_modules
+
+            persist_dataset_modules(force=False)
+        except Exception:
+            pass
     return n
 
 
@@ -244,7 +304,7 @@ def apply_simulated_write(point_id: str, value: float) -> None:
     _emit(pid, float(value), _UNITS.get(canon) if canon else None, eq or None)
 
 
-def seed_synthetic_history(hours: float = 0.5, step_minutes: float = 10.0) -> int:
+def seed_synthetic_history(hours: float = 2.0, step_minutes: float = 15.0) -> int:
     """Backfill SIMULATION samples so Agent Centre and charts have a recent series."""
     global _HISTORY_SEEDED
     hours = max(0.25, float(hours))
@@ -261,11 +321,59 @@ def seed_synthetic_history(hours: float = 0.5, step_minutes: float = 10.0) -> in
     return total
 
 
+def _dataset_has_simulation() -> bool:
+    try:
+        from backend.services.canonical_telemetry_service import latest_points
+
+        pts = latest_points(limit=20)
+        return any(str(p.get("source") or "").upper() == "SIMULATION" for p in pts)
+    except Exception:
+        return False
+
+
 def ensure_synthetic_plant() -> int:
-    """Publish the full O1–O20 catalog plus extra plant IDs. Never LIVE_BMS."""
-    if not _HISTORY_SEEDED:
-        return seed_synthetic_history()
-    return publish_once()
+    """Keep the synthetic plant in SQLite. Reuse existing dataset rows when present."""
+    global _HISTORY_SEEDED
+    if _HISTORY_SEEDED or _dataset_has_simulation():
+        _HISTORY_SEEDED = True
+        return publish_once()
+    return seed_synthetic_history()
+
+
+def hydrate_synthetic_dataset() -> int:
+    """Fill canonical + DEMO tables so every page can run without LIVE BMS.
+
+    Gated on HVAC_USE_SIMULATION so pytest (flag off) still sees empty plants.
+    """
+    if not _use_simulation_flag() or not is_simulation_mode():
+        return 0
+    n = 0
+    try:
+        n = ensure_synthetic_plant()
+    except Exception:
+        try:
+            n = publish_once()
+        except Exception:
+            n = 0
+    try:
+        from backend.services.dataset_persist_service import persist_dataset_modules
+
+        persist_dataset_modules(force=True)
+    except Exception:
+        pass
+    try:
+        from backend.services.ventilation_opportunity_service import ensure_demo_telemetry
+
+        ensure_demo_telemetry()
+    except Exception:
+        pass
+    try:
+        from backend.services.operations_maintenance_opportunity_service import ensure_om_demo
+
+        ensure_om_demo()
+    except Exception:
+        pass
+    return n
 
 
 def _loop(interval: float) -> None:

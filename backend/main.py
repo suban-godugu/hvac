@@ -9,7 +9,7 @@ if os.getenv("VERCEL"):
     os.environ.setdefault("HVAC_BMS_MODE", "simulation")
     os.environ.setdefault("HVAC_USE_SIMULATION", "1")
     os.environ.setdefault("HVAC_BMS_WRITE_ENABLED", "0")
-    os.environ.setdefault("HVAC_ALLOW_SIM_WRITES", "0")
+    os.environ.setdefault("HVAC_ALLOW_SIM_WRITES", "1")
     os.environ.setdefault("HVAC_DEPLOYMENT_MODE", "demo")
     os.environ.setdefault("HVAC_PLANT_MODE_PERSIST", "1")
     os.environ.setdefault("HVAC_CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")

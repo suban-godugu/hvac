@@ -384,18 +384,45 @@ def mapped_telemetry() -> List[Dict[str, Any]]:
     return out
 
 
+def _synthetic_plant_rows() -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for p in latest_points(limit=400):
+        pid = str(p.get("point_id") or "")
+        eid = p.get("equipment_id") or (pid.split(".", 1)[0] if "." in pid else "")
+        point = pid.split(".", 1)[1] if "." in pid else pid
+        rows.append(
+            {
+                "equipment_id": eid,
+                "point": point,
+                "value": p.get("value"),
+                "unit": p.get("unit"),
+                "quality": p.get("quality") or "GOOD",
+                "source": p.get("source"),
+                "timestamp": p.get("timestamp"),
+                "age_seconds": p.get("age_seconds"),
+                "bms_status": "DISCONNECTED",
+            }
+        )
+    return rows
+
+
 def plant_overview() -> Dict[str, List[Dict[str, Any]]]:
-    rows = mapped_telemetry()
+    from backend.bms.simulation_telemetry import _use_simulation_flag
+
+    rows = _synthetic_plant_rows() if (_use_simulation_flag() and is_simulation_mode()) else mapped_telemetry()
+    if not rows and is_simulation_mode():
+        rows = _synthetic_plant_rows()
     groups: Dict[str, Dict[str, Dict[str, Any]]] = {"chillers": {}, "ahus": {}, "pumps": {}, "vfds": {}}
     for r in rows:
-        eid = r["equipment_id"]
-        if eid.upper().startswith("CH"):
+        eid = str(r.get("equipment_id") or "")
+        eu = eid.upper()
+        if eu.startswith("CH") and not eu.startswith("CW"):
             bucket = "chillers"
-        elif eid.upper().startswith("AHU"):
+        elif eu.startswith("AHU"):
             bucket = "ahus"
-        elif eid.upper().startswith("P"):
+        elif eu.startswith("P") and not eu.startswith("PARK"):
             bucket = "pumps"
-        elif eid.upper().startswith("VFD"):
+        elif eu.startswith("VFD"):
             bucket = "vfds"
         else:
             continue

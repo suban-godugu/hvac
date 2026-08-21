@@ -68,13 +68,15 @@ function LivePlant({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Live plant</h2>
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          {String(telStatus || '').toUpperCase().includes('SIMUL') ? 'Simulated plant' : 'Live plant'}
+        </h2>
         <span className="text-[11px] font-mono text-slate-600">{telStatus || 'NO DATA'}</span>
       </div>
       {empty ? (
         <EmptyState
           title="NO DATA"
-          detail="No mapped plant equipment yet. Discover the BMS and map canonical points — missing sensors stay empty."
+          detail="Synthetic plant points have not published yet. Start the API with HVAC_USE_SIMULATION=1, or map a live BMS."
           href="/platform/bms"
           actionLabel="Open BMS mapping"
         />
@@ -216,7 +218,11 @@ export default function FleetOverviewPage() {
           {
             label: 'Cooling Demand',
             value: totalPlantTons != null ? `${Number(totalPlantTons).toFixed(1)} Tons` : null,
-            detail: platform.data?.bmsConnected ? 'From supervisory plant telemetry' : 'BMS DISCONNECTED — not LIVE',
+            detail: platform.data?.bmsConnected
+              ? 'From supervisory plant telemetry'
+              : String(platform.data?.telemetry?.status || '').toUpperCase().includes('SIMUL')
+                ? 'SYNTHETIC DATASET — not LIVE BMS'
+                : 'BMS DISCONNECTED — not LIVE',
             icon: Server,
           },
           {

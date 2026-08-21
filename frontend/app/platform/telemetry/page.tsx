@@ -35,21 +35,21 @@ export default function TelemetryPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <PageHeader icon={Activity} title="Live Telemetry" subtitle="Canonical points from the FastAPI stream. Missing sensors stay empty." badge="CANONICAL" />
+      <PageHeader icon={Activity} title="Telemetry" subtitle="Canonical points from the FastAPI stream. Simulation stamps SIMULATION, never LIVE_BMS." badge="CANONICAL" />
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone={toneForStatus(live.bmsStatus)}>BMS {live.bmsStatus}</StatusBadge>
         <StatusBadge tone={toneForStatus(live.telemetryStatus)}>TELEMETRY {live.telemetryStatus}</StatusBadge>
         <StatusBadge tone={live.connectionState === 'open' ? 'live' : 'warn'} pulse={live.connectionState === 'open'}>
           {wsLabel}
         </StatusBadge>
-        <StatusBadge tone="muted" pulse={false}>
-          CONTROL DISABLED
+        <StatusBadge tone={live.controlEnabled ? 'warn' : 'muted'} pulse={false}>
+          {live.controlEnabled ? 'SIM CONTROL ON' : 'WRITE DISABLED'}
         </StatusBadge>
       </div>
       {events.length === 0 ? (
         <EmptyState
           title="NO DATA"
-          detail="No mapped LIVE points on the stream yet. Map discovered BMS points; missing sensors stay empty — never filled with zero."
+          detail="No canonical points yet. With HVAC_USE_SIMULATION=1 the API publishes a synthetic plant on each request."
           href="/platform/bms"
           actionLabel="Open BMS mapping"
         />

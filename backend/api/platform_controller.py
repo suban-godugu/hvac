@@ -46,4 +46,4 @@ async def post_plant_mode(req: PlantModeRequest):
 
 @router.get("/telemetry")
 async def telemetry_latest(building_id: Optional[str] = Query(default=None)):
-    return {"points": latest_points(building_id)}
+    return {"points": latest_points(building_id, limit=400)}

@@ -208,8 +208,8 @@ def _usable(row: Optional[HvacTelemetryDB]) -> bool:
     src = (row.source or "").upper()
     if src in ("DEMO", "TEST TELEMETRY", "TEST"):
         return ALLOW_DEMO
-    if src == "SIMULATION":
-        return ALLOW_DEMO
+    if src == "SIMULATION" or "SIMUL" in src:
+        return (row.quality or "GOOD").upper() == "GOOD"
     return (row.quality or "GOOD").upper() == "GOOD"
 
 
@@ -381,12 +381,51 @@ def _normalize(oid: str, ev: Dict[str, Any], tel_meta: Dict[str, Any], tel: Dict
             "outdoor_rh_pct": ev.get("outdoor_rh_pct") or tel.get("outdoor_rh_percent"),
             "return_rh_pct": ev.get("return_rh_pct") or tel.get("return_rh_percent"),
             "schedule_state": tel.get("schedule_state"),
+            "outdoor_dew_point_c": ev.get("outdoor_dew_point_c"),
+            "return_dew_point_c": ev.get("return_dew_point_c"),
+            "zone_cooling_setpoint_c": ev.get("zone_cooling_setpoint_c"),
+            "return_air_damper_pct": ev.get("return_air_damper_pct"),
+            "relief_damper_pct": ev.get("relief_damper_pct"),
+            "fan_status": ev.get("fan_status"),
+            "fan_command": ev.get("fan_command"),
+            "fire_mode": ev.get("fire_mode"),
+            "cooling_call": ev.get("cooling_call"),
+            "cooling_valve_pct": ev.get("cooling_valve_pct"),
         }
         body["optimized_state"] = {
             "recommended_damper_pct": ev.get("optimized_value"),
             "optimized_airflow_cfm": ev.get("optimized_airflow_cfm"),
             "economizer_status": ev.get("economizer_status"),
         }
+        from backend.services.dataset_persist_service import _dewpoint_c
+
+        oat = tel.get("outdoor_temp_c")
+        oa_rh = tel.get("outdoor_rh_percent")
+        rat = tel.get("return_temp_c")
+        ra_rh = tel.get("return_rh_percent")
+        extras = {
+            "outdoor_dew_point_c": _dewpoint_c(oat, oa_rh),
+            "oa_dew_point_c": _dewpoint_c(oat, oa_rh),
+            "return_dew_point_c": _dewpoint_c(rat, ra_rh),
+            "ra_dew_point_c": _dewpoint_c(rat, ra_rh),
+            "zone_cooling_setpoint_c": 24.0,
+            "cooling_setpoint_c": 24.0,
+            "return_air_damper_pct": 80.0,
+            "return_air_damper": 80.0,
+            "relief_damper_pct": 18.0,
+            "fan_status": "ON" if tel.get("occupied") is not False else "OFF",
+            "fan_command": "ON",
+            "fire_mode": "NORMAL",
+            "fire_alarm": "NORMAL",
+            "cooling_call": "ACTIVE",
+            "cooling_valve": 12.0,
+            "occupancy_state": tel.get("schedule_state") or "OCCUPIED",
+            "schedule_state": tel.get("schedule_state") or "OCCUPIED",
+            "telemetry_quality": tel_meta.get("state") or "GOOD",
+            "telemetry_age": tel_meta.get("ageSeconds"),
+        }
+        body.update(extras)
+        body["current_state"].update(extras)
     if oid == "O11":
         body["current_state"] = {
             "night_purge_status": ev.get("night_purge_status"),

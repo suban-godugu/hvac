@@ -215,3 +215,67 @@ def test_live_bms_mode_no_simulator_fallback(monkeypatch):
     assert is_simulation_mode() is True
     assert isinstance(get_bms_gateway(), SimulatorBMSGateway)
     set_plant_mode("DATASET")
+
+
+def test_pages_hydrate_synthetic_dataset(monkeypatch):
+    monkeypatch.setenv("HVAC_USE_SIMULATION", "1")
+    monkeypatch.setenv("HVAC_ALLOW_SIM_WRITES", "1")
+    from database.session import init_db
+    from backend.bms.simulation_telemetry import hydrate_synthetic_dataset
+    from backend.services.canonical_telemetry_service import latest_points
+    from backend.services.hvac_operations_maintenance_module import get_dashboard as om_dashboard
+    from backend.services.platform_bms_service import plant_overview
+    from backend.services.ventilation_opportunity_service import get_dashboard as vent_dashboard
+
+    init_db()
+    n = hydrate_synthetic_dataset()
+    assert n > 20
+    pts = latest_points(limit=400)
+    assert any(str(p.get("source") or "").upper() == "SIMULATION" for p in pts)
+    plant = plant_overview()
+    assert plant["chillers"]
+    assert plant["ahus"]
+    assert plant["pumps"]
+    assert plant["vfds"]
+    vent = vent_dashboard()
+    assert vent.get("opportunities")
+    om = om_dashboard()
+    assert om.get("opportunities")
+    from backend.services.o2_service import o2_service
+    from backend.services.o3_service import o3_service
+    from backend.services.o4_service import o4_service
+    from backend.services.o14_service import sample_o14
+    from backend.agents.plant_control.o5_duct_static_pressure.engine import o5_agent
+
+    z = o2_service.get_zones()
+    assert len(z) >= 8
+    assert o2_service.get_state()["kpis"]["optimization_status"] != "WAIT_FOR_TELEMETRY"
+    assert o3_service.get_zones()
+    assert o3_service.get_state()["kpis"]["current_sat"]
+    assert o4_service.get_cooling_load().get("current_load_tons") is not None
+    sampled = sample_o14("any-building")
+    assert sampled.get("INDEX_DP") is not None or sampled.get("FLOW") is not None
+    o5 = o5_agent.generate_and_evaluate_candidates()
+    assert o5.get("vav_zones")
+    assert o5.get("ninety_pct_damper_pct") is not None
+    assert o5.get("critical_zone_id")
+    from database.session import SessionLocal
+    from database.models import PlantControlTelemetryDB, ZoneTelemetryDB
+    from database.models_ventilation import HvacTelemetryDB
+    from database.models_om import OmTelemetryDB
+    from database.models_vs import VariableSpeedTelemetryDB
+    from database.models_energy_ops import EnergyTelemetryDB
+    from database.models_o1 import O1TelemetrySampleDB
+
+    db = SessionLocal()
+    try:
+        assert db.query(PlantControlTelemetryDB).filter_by(source="SIMULATION").count() > 0
+        assert db.query(HvacTelemetryDB).filter_by(source="SIMULATION").count() > 0
+        assert db.query(OmTelemetryDB).filter_by(source="SIMULATION").count() > 0
+        assert db.query(ZoneTelemetryDB).count() > 0
+        assert db.query(VariableSpeedTelemetryDB).filter_by(source="SIMULATION").count() > 0
+        assert db.query(EnergyTelemetryDB).filter_by(source="SIMULATION").count() > 0
+        assert db.query(O1TelemetrySampleDB).count() > 0
+    finally:
+        db.close()
+

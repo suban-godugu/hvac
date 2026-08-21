@@ -111,6 +111,7 @@ def as_contract(row: Any) -> Dict[str, Any]:
 def latest_points(building_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
     from database.session import SessionLocal
     from database.models_platform import CanonicalTelemetryDB
+    from sqlalchemy import or_
 
     key = (_CACHE_PREFIX, building_id or "", int(limit))
     cached = cache_get(key)
@@ -121,7 +122,12 @@ def latest_points(building_id: Optional[str] = None, limit: int = 50) -> List[Di
     try:
         q = db.query(CanonicalTelemetryDB)
         if building_id:
-            q = q.filter(CanonicalTelemetryDB.building_id == building_id)
+            q = q.filter(
+                or_(
+                    CanonicalTelemetryDB.building_id == building_id,
+                    CanonicalTelemetryDB.building_id.is_(None),
+                )
+            )
         fetch = max(int(limit) * 6, 80)
         rows = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).limit(fetch).all()
         payload: List[Dict[str, Any]] = []
@@ -174,9 +180,16 @@ def query_telemetry(
 
     db = SessionLocal()
     try:
+        from sqlalchemy import or_
+
         q = db.query(CanonicalTelemetryDB)
         if building_id:
-            q = q.filter(CanonicalTelemetryDB.building_id == building_id)
+            q = q.filter(
+                or_(
+                    CanonicalTelemetryDB.building_id == building_id,
+                    CanonicalTelemetryDB.building_id.is_(None),
+                )
+            )
         if point_id:
             q = q.filter(CanonicalTelemetryDB.point_id == point_id)
         if asset_id:

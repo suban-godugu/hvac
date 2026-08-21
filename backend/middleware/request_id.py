@@ -23,6 +23,14 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         rid = request.headers.get("x-request-id") or request.headers.get("X-Request-ID") or f"req_{uuid.uuid4().hex[:12]}"
         token = request_id_ctx.set(rid)
+        path = request.url.path or ""
+        if path not in ("/healthz", "/api/healthz", "/api/health", "/readyz", "/api/readyz", "/api/ready"):
+            try:
+                from backend.bms.simulation_telemetry import hydrate_synthetic_dataset
+
+                hydrate_synthetic_dataset()
+            except Exception:
+                pass
         try:
             response = await call_next(request)
         finally:

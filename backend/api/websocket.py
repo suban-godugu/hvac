@@ -15,7 +15,7 @@ async def telemetry_websocket(websocket: WebSocket):
     try:
         while True:
             snap = platform_snapshot()
-            points = latest_points(limit=40)
+            points = latest_points(limit=400)
             events = []
             for p in points:
                 src = p.get("source")

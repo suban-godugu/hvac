@@ -15,9 +15,16 @@ def _now_row(point_id: str, building_id: Optional[str] = None) -> Optional[Dict[
 
     db = SessionLocal()
     try:
+        from sqlalchemy import or_
+
         q = db.query(CanonicalTelemetryDB).filter(CanonicalTelemetryDB.point_id == point_id)
         if building_id:
-            q = q.filter(CanonicalTelemetryDB.building_id == building_id)
+            q = q.filter(
+                or_(
+                    CanonicalTelemetryDB.building_id == building_id,
+                    CanonicalTelemetryDB.building_id.is_(None),
+                )
+            )
         rows = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).limit(40).all()
         for row in rows:
             if accepts_telemetry_source(row.source):
