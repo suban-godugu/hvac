@@ -53,7 +53,8 @@ def test_guide_evaluate_cannot_pass_dispatch_gate():
 
 def test_ui_state_not_live_when_bms_offline(monkeypatch):
     monkeypatch.setattr("backend.services.hvac_safety_contract.production_bms_connected", lambda: False)
-    assert classify_ui_state(live=True, source="LIVE_BMS", classified_status="LIVE") == "SIMULATION"
+    assert classify_ui_state(live=True, source="LIVE_BMS", classified_status="LIVE") == "NO_DATA"
+    assert classify_ui_state(live=True, source="SIMULATION", classified_status="LIVE") == "SIMULATION"
     assert classify_ui_state(live=False, source=None, classified_status=None) == "NO_DATA"
 
 

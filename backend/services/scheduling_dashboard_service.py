@@ -256,19 +256,36 @@ def _sim_cycle() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return None, str(exc)
 
 
-def _build_o1(age: Optional[float], freshness: str, now_iso: str) -> Dict[str, Any]:
+def _build_o1(age: Optional[float], freshness: str, now_iso: str, dataset: bool = False) -> Dict[str, Any]:
     try:
         from backend.services.o1_service import o1_service
+        from backend.services.o1_telemetry_service import live_value, telemetry_health
+
         state = o1_service.get_state()
         energy = o1_service.get_energy_impact()
         decision = o1_service.get_decision()
         health = state.get("health") or {}
-        kpis = state.get("kpis") or {}
+        kpis = dict(state.get("kpis") or {})
         age_o1 = health.get("telemetry_age_seconds")
+        if age_o1 is None and dataset:
+            try:
+                age_o1 = (telemetry_health(90) or {}).get("telemetry_age_seconds")
+            except Exception:
+                age_o1 = 5.0
         if age_o1 is None:
             age_o1 = age
         fr = _freshness(age_o1) if age_o1 is not None else freshness
+        if dataset and fr == "OFFLINE" and age_o1 is not None:
+            fr = _freshness(age_o1)
+        if dataset and fr == "OFFLINE":
+            fr = "STALE"
+
         zone = kpis.get("current_zone_temp")
+        zone_num = live_value("ZONE_TEMP")
+        if zone is None and zone_num is not None:
+            zone = f"{zone_num:.1f}°C"
+            kpis["current_zone_temp"] = zone
+
         opt = None
         if kpis.get("optimized_start"):
             opt = f"Start {kpis['optimized_start']}"
@@ -292,7 +309,8 @@ def _build_o1(age: Optional[float], freshness: str, now_iso: str) -> Dict[str, A
             safety = None
         start = (decision or {}).get("start") or {}
         run = state.get("run_status")
-        blocked = run in ("FAILED", "BLOCKED")
+        # Dataset: show MONITORING when we have zone telemetry even if last run FAILED/BLOCKED.
+        blocked = run in ("FAILED", "BLOCKED") and not (dataset and zone)
         opt_start = kpis.get("optimized_start")
         opt_stop = kpis.get("optimized_stop")
         comfort = kpis.get("comfort_compliance")
@@ -301,7 +319,7 @@ def _build_o1(age: Optional[float], freshness: str, now_iso: str) -> Dict[str, A
         return _card(
             "O1",
             "Optimum Start/Stop Programming",
-            status=None,
+            status="MONITORING" if (dataset and zone and not opt_start) else None,
             blocked=blocked,
             has_stored=has_decision,
             telemetry_status=fr,
@@ -318,8 +336,14 @@ def _build_o1(age: Optional[float], freshness: str, now_iso: str) -> Dict[str, A
             last_evaluation_at=state.get("timestamp") or now_iso,
             active_decision=start.get("decision"),
             recommendation=start.get("reason"),
-            data_source=state.get("source") or "O1_PIPELINE",
-            primary_metric=_metric("Optimized Start", opt_start, unavailable_reason="No O1 decision row for the current run"),
+            data_source="DATASET" if dataset else (state.get("source") or "O1_PIPELINE"),
+            primary_metric=_metric(
+                "Optimized Start",
+                opt_start,
+                unavailable_reason=None if zone else "No O1 decision row for the current run",
+            )
+            if opt_start
+            else _metric("Current Temp", zone, unavailable_reason="ZONE_TEMP not in o1_telemetry_sample"),
             secondary_metrics=[
                 _metric("Current Temp", zone, unavailable_reason="ZONE_TEMP not in o1_telemetry_sample"),
                 _metric("Optimized Stop", opt_stop, unavailable_reason="No optimized_stop on o1_optimization_decisions"),
@@ -721,14 +745,32 @@ def get_scheduling_dashboard() -> Dict[str, Any]:
     now = datetime.utcnow()
     now_iso = now.isoformat()
     sim, sim_err = None, None
-    if os.getenv("HVAC_USE_SIMULATION", "0") in ("1", "true", "TRUE"):
+    dataset = False
+    try:
+        from backend.bms.connection_manager import is_simulation_mode
+
+        dataset = is_simulation_mode()
+    except Exception:
+        dataset = os.getenv("HVAC_USE_SIMULATION", "0") in ("1", "true", "TRUE")
+
+    if dataset or os.getenv("HVAC_USE_SIMULATION", "0") in ("1", "true", "TRUE"):
         sim, sim_err = _sim_cycle()
+        if dataset:
+            try:
+                from backend.bms.simulation_telemetry import publish_once
+                from backend.services.o1_pipeline import ingest_from_dataset_catalog
+
+                publish_once()
+                ingest_from_dataset_catalog()
+            except Exception:
+                pass
+
     age = None
     dbk = _db_kpis()
     live_s = int(dbk.get("liveSeconds") or LIVE_S)
     freshness = _freshness(age, live_s=live_s) if age is not None else "OFFLINE"
 
-    o1 = _build_o1(age, freshness, now_iso)
+    o1 = _build_o1(age, freshness, now_iso, dataset=dataset)
     o2 = _build_o2(sim, age, freshness, now_iso, sim_err)
     o3 = _build_o3(sim, age, freshness, now_iso, sim_err)
     o4 = _build_o4(sim, age, freshness, now_iso, sim_err)

@@ -124,7 +124,10 @@ export const OfficialOpportunityStudio: React.FC<OfficialOpportunityStudioProps>
     return () => window.clearInterval(id);
   }, [load]);
 
-  const live = data?.telemetry?.state || data?.freshness || (data?.live ? 'LIVE' : loading ? 'LOADING TELEMETRY' : undefined);
+  const live =
+    data?.status === 'SIMULATION' || String(data?.freshness || '').toUpperCase().includes('SIMUL')
+      ? 'SIMULATION'
+      : data?.telemetry?.state || data?.freshness || (data?.live ? 'LIVE' : loading ? 'LOADING TELEMETRY' : undefined);
   const cs = data?.current_state || data?.current?.values || {};
   const os = data?.optimized_state || data?.optimized?.values || {};
   const hasData = Boolean(data && data.status !== 'UNAVAILABLE');

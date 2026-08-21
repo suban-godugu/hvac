@@ -10,7 +10,13 @@ from backend.agents.scheduling_supervisory.agent import SchedulingSupervisoryAge
 from backend.agents.scheduling_supervisory.state import AgentMode
 
 REPORT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reports"))
-os.makedirs(REPORT_DIR, exist_ok=True)
+if os.getenv("VERCEL"):
+    REPORT_DIR = os.path.join("/tmp", "hvac-reports")
+try:
+    os.makedirs(REPORT_DIR, exist_ok=True)
+except OSError:
+    REPORT_DIR = os.path.join("/tmp", "hvac-reports")
+    os.makedirs(REPORT_DIR, exist_ok=True)
 
 
 class ScenarioEvaluationRunner:

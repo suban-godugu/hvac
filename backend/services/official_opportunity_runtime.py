@@ -37,9 +37,7 @@ def _v(points: Dict[str, Any], key: str) -> Optional[float]:
     row = points.get(key)
     if not row:
         return None
-    if (row.get("quality") or "").upper() != "GOOD":
-        return None
-    if (row.get("source") or "").upper() == "SIMULATION":
+    if (row.get("quality") or "").upper() not in ("GOOD", "LIVE"):
         return None
     try:
         return float(row["value"])
@@ -64,11 +62,25 @@ def _should_persist(oid: str) -> bool:
 
 
 def _attach_meta(result: Dict[str, Any], sampled: Dict[str, Any], started: float) -> Dict[str, Any]:
+    from backend.services.hvac_safety_contract import is_demo_source
+
+    raw = sampled.get("_raw") or {}
+    sources = [row.get("source") for row in raw.values() if isinstance(row, dict)]
+    demo = any(is_demo_source(s) for s in sources) or is_demo_source(sampled.get("source"))
     age = telemetry_age_seconds(sampled) or max(0.0, time.time() - started)
     result["telemetry_age_seconds"] = round(age, 2)
-    result["freshness"] = freshness(age) if result.get("live") else "OFFLINE"
-    result["agent_status"] = result.get("agent_status") or ("ONLINE" if result.get("live") else "OFFLINE")
-    result["bms_status"] = "CONNECTED" if result.get("live") else "UNKNOWN"
+    if demo:
+        result["live"] = False
+        result["freshness"] = "SIMULATED"
+        result["agent_status"] = "ONLINE"
+        result["bms_status"] = "DISCONNECTED"
+        if result.get("status") in (None, "AWAITING_TELEMETRY"):
+            result["status"] = "SIMULATION"
+        result["source"] = "SIMULATION"
+    else:
+        result["freshness"] = freshness(age) if result.get("live") else "OFFLINE"
+        result["agent_status"] = result.get("agent_status") or ("ONLINE" if result.get("live") else "OFFLINE")
+        result["bms_status"] = "CONNECTED" if result.get("live") else "UNKNOWN"
     result["execution_time_ms"] = int((time.time() - started) * 1000)
     result["last_execution"] = result.get("evaluated_at")
     return result
@@ -134,12 +146,12 @@ def evaluate_o16(persist: bool = True) -> Dict[str, Any]:
     return _eval(persist=persist)
 
 
-def _persist_vent(oid: str, equipment_id: str, mapping: List[tuple]) -> None:
+def _persist_vent(oid: str, equipment_id: str, mapping: List[tuple], source: str = "SIMULATION") -> None:
     points = []
     for sensor_type, value, unit in mapping:
         if value is None:
             continue
-        points.append({"sensor_type": sensor_type, "value": value, "unit": unit, "quality": "GOOD", "source": "BACnet_IP"})
+        points.append({"sensor_type": sensor_type, "value": value, "unit": unit, "quality": "GOOD", "source": source})
     if points:
         persist_ventilation_points(oid, equipment_id, points)
 
@@ -163,7 +175,7 @@ def evaluate_o11(persist: bool = True) -> Dict[str, Any]:
         ]
         if sampled.get(k) is not None
     }
-    if persist and result.get("live") and _should_persist("O11"):
+    if persist and sampled.get("OAT") is not None and _should_persist("O11"):
         persist_execution("O11", "O11_NIGHT_PURGE", confidence=result.get("confidence"), execution_time_ms=int((time.time() - started) * 1000))
         _persist_vent(
             "O11",
@@ -210,7 +222,7 @@ def evaluate_o13(persist: bool = True) -> Dict[str, Any]:
         "damper_pct": sampled.get("DAMPER_PCT"),
         "airflow_cfm": sampled.get("AIRFLOW_CFM"),
     } if sampled.get("CO_PPM") is not None else None
-    if persist and result.get("live") and _should_persist("O13"):
+    if persist and sampled.get("CO_PPM") is not None and _should_persist("O13"):
         persist_execution("O13", "O13_DCV_CO", confidence=result.get("confidence"), execution_time_ms=int((time.time() - started) * 1000))
         persist_co_measurement(
             {
@@ -222,7 +234,7 @@ def evaluate_o13(persist: bool = True) -> Dict[str, Any]:
                 "damper_pct": sampled.get("DAMPER_PCT"),
                 "airflow_cfm": sampled.get("AIRFLOW_CFM"),
                 "quality": "GOOD",
-                "source": "BACnet_IP",
+                "source": "SIMULATION",
             }
         )
         persist_optimization(

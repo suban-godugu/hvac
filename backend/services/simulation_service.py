@@ -45,8 +45,11 @@ class SimulationService:
             db.close()
 
     def _init_history(self):
-        result = self.orchestrator.run_supervisory_cycle(elapsed_minutes=0)
-        self._record_history(result)
+        try:
+            result = self.orchestrator.run_supervisory_cycle(elapsed_minutes=0)
+            self._record_history(result)
+        except Exception as exc:
+            log_event("ERROR", "simulation", "INIT_HISTORY_FAILED", extra={"error": type(exc).__name__})
 
     def step(self, elapsed_minutes: int = 5, minutes: int = None, **kwargs) -> Dict[str, Any]:
         dt = minutes if minutes is not None else elapsed_minutes

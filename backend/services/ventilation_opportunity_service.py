@@ -154,7 +154,7 @@ def ensure_demo_telemetry(db=None, force: bool = False) -> Optional[int]:
             return_airflow_cfm=7350.0,
             quality="GOOD",
             source=DEMO_SOURCE,
-            site_name="Skyline Corporate Center",
+            site_name="Senatria Corporation",
             site_location="Bengaluru, Karnataka, India",
             plant_label="240T",
             building_area_sqft=75000.0,

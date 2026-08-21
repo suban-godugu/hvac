@@ -14,7 +14,11 @@ def seed_database():
     db = SessionLocal()
 
     # Check if building already seeded
-    if db.query(Building).filter_by(id="bldg-corp-hq-01").first():
+    existing = db.query(Building).filter_by(id="bldg-corp-hq-01").first()
+    if existing:
+        if existing.name != "Senatria Corporation":
+            existing.name = "Senatria Corporation"
+            db.commit()
         print("Database already seeded.")
         db.close()
         from backend.services.opportunity_persist_service import ensure_catalog
@@ -24,7 +28,7 @@ def seed_database():
     # Seed Building
     bldg = Building(
         id="bldg-corp-hq-01",
-        name="Skyline Corporate Center",
+        name="Senatria Corporation",
         area_sqft=75000.0,
         floors=3,
         design_cooling_tonnage=240.0,

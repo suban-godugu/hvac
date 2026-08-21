@@ -75,6 +75,11 @@ def ensure_point_map_and_config() -> None:
                     source="CONFIG",
                 ))
         db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
     finally:
         db.close()
 

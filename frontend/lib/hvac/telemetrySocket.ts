@@ -27,6 +27,7 @@ export type TelemetryFrame = {
   safeMode?: boolean;
   controlEnabled?: boolean;
   mode?: string;
+  plantMode?: string | null;
   events?: TelemetryEvent[];
   count?: number;
 };
@@ -34,14 +35,21 @@ export type TelemetryFrame = {
 type Listener = (frame: TelemetryFrame, state: WsConnectionState) => void;
 
 function websocketUrl(): string {
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-  try {
-    const u = new URL(api, typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
-    const proto = u.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${u.host}/api/ws/telemetry`;
-  } catch {
-    return 'ws://127.0.0.1:8000/api/ws/telemetry';
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const api = process.env['NEXT_PUBLIC_API_URL'];
+    if (api && /^https?:/i.test(api)) {
+      try {
+        const u = new URL(api, window.location.origin);
+        const p = u.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${p}//${u.host}/api/ws/telemetry`;
+      } catch {
+        /* fall through */
+      }
+    }
+    return `${proto}//${window.location.host}/api/ws/telemetry`;
   }
+  return 'ws://127.0.0.1:8000/api/ws/telemetry';
 }
 
 class TelemetrySocket {

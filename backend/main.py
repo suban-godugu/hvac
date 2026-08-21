@@ -2,12 +2,52 @@ import os
 import sys
 from contextlib import asynccontextmanager
 
+if os.getenv("VERCEL"):
+    os.environ["DATABASE_URL"] = "sqlite:////tmp/hvac_supervisory.db"
+    os.environ.setdefault("HVAC_START_CONTROL_WORKER", "0")
+    os.environ.setdefault("HVAC_ALLOW_CREATE_ALL", "1")
+    os.environ.setdefault("HVAC_BMS_MODE", "simulation")
+    os.environ.setdefault("HVAC_USE_SIMULATION", "1")
+    os.environ.setdefault("HVAC_BMS_WRITE_ENABLED", "0")
+    os.environ.setdefault("HVAC_ALLOW_SIM_WRITES", "0")
+    os.environ.setdefault("HVAC_DEPLOYMENT_MODE", "demo")
+    os.environ.setdefault("HVAC_PLANT_MODE_PERSIST", "1")
+    os.environ.setdefault("HVAC_CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _BACKEND = os.path.dirname(os.path.abspath(__file__))
 if _BACKEND not in sys.path:
     sys.path.append(_BACKEND)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
+
+def _load_root_env() -> None:
+    path = os.path.join(_ROOT, ".env")
+    if not os.path.isfile(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except OSError:
+        return
+
+
+_load_root_env()
+if "pytest" not in sys.modules and os.getenv("HVAC_BMS_MODE", "simulation").strip().lower() in (
+    "simulation",
+    "simulator",
+    "sim",
+):
+    os.environ["HVAC_USE_SIMULATION"] = "1"
+    os.environ["HVAC_ALLOW_SIM_WRITES"] = "1"
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -44,8 +84,11 @@ def _error_body(code: str, message: str, status_code: int, details=None) -> dict
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
-    seed_database()
+    try:
+        init_db()
+        seed_database()
+    except Exception as exc:
+        log_event("ERROR", "api", "STARTUP_DB", extra={"error": type(exc).__name__})
     if os.getenv("HVAC_START_CONTROL_WORKER", "1") in ("1", "true", "TRUE"):
         control_worker.start()
     try:
@@ -57,10 +100,24 @@ async def lifespan(app: FastAPI):
     try:
         from backend.bms.simulation_telemetry import start_simulation_telemetry, stop_simulation_telemetry
 
-        start_simulation_telemetry()
+        start_simulation_telemetry(force=os.getenv("HVAC_USE_SIMULATION", "0") in ("1", "true", "TRUE"))
     except Exception:
         stop_simulation_telemetry = lambda: None  # noqa: E731
     log_event("INFO", "api", "SERVER_START")
+    from backend.bms.command_writer import simulated_writes_allowed
+    from backend.bms.connection_manager import is_simulation_mode
+
+    log_event(
+        "INFO",
+        "api",
+        "SIM_CONTROL",
+        extra={
+            "use_simulation": os.getenv("HVAC_USE_SIMULATION"),
+            "allow_sim_writes": os.getenv("HVAC_ALLOW_SIM_WRITES"),
+            "simulation_mode": is_simulation_mode(),
+            "sim_writes_allowed": simulated_writes_allowed(),
+        },
+    )
     yield
     try:
         stop_reader()
@@ -83,15 +140,17 @@ app = FastAPI(
 
 _cors = os.getenv("HVAC_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 allow_origins = [o.strip() for o in _cors.split(",") if o.strip()]
+_cors_regex = (os.getenv("HVAC_CORS_ORIGIN_REGEX") or "").strip() or None
 if os.getenv("HVAC_ENV", "development").lower() == "production":
     allow_origins = [o for o in allow_origins if o != "*"]
-    if not allow_origins:
+    if not allow_origins and not _cors_regex:
         allow_origins = ["http://localhost:3000"]
 
 app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
+    allow_origin_regex=_cors_regex,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,6 +172,12 @@ app.include_router(o15_router)
 app.include_router(o16_router)
 app.include_router(hvac_ventilation_router)
 app.include_router(hvac_om_router)
+
+if os.getenv("VERCEL"):
+    try:
+        init_db()
+    except Exception:
+        pass
 
 
 @app.exception_handler(HTTPException)

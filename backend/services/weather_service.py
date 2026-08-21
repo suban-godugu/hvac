@@ -63,7 +63,7 @@ class LiveWeatherService:
         if moved:
             self._fetched_at = 0.0
         return {
-            "name": os.getenv("FACILITY_NAME") or "Skyline Corporate Center",
+            "name": os.getenv("FACILITY_NAME") or "Senatria Corporation",
             "city": self.city_name,
             "location": self.location_name,
             "timezone": self.timezone,

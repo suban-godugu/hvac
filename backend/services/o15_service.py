@@ -13,7 +13,14 @@ from backend.agents.runtime.audit import audit_command
 from backend.agents.scheduling_supervisory.gateway import get_bms_gateway
 from backend.services.canonical_telemetry_service import find_point_by_suffix, latest_points, record_point
 from backend.services.ttl_cache import cache_get, cache_set
-from backend.services.hvac_safety_contract import evaluate_dispatch, is_safe_mode, production_bms_connected, classify_ui_state
+from backend.services.hvac_safety_contract import (
+    classify_ui_state,
+    evaluate_dispatch,
+    ingest_quality,
+    is_safe_mode,
+    normalize_telemetry_source,
+    production_bms_connected,
+)
 from backend.services.opportunity_persist_service import audit, persist_execution, persist_optimization
 from backend.services.platform_ops_service import get_safe_mode, set_safe_mode
 from sqlalchemy import or_
@@ -23,20 +30,20 @@ from database.models_platform import AgentRunDB
 from database.session import SessionLocal
 
 POINT_ALIASES = {
-    "OAT": ("ACC.OAT", "O15.OAT", "WEATHER.OutdoorDryBulb"),
-    "HEAD_PRESSURE": ("ACC.HeadPressure", "O15.HEAD_PRESSURE"),
+    "OAT": ("ACC.OAT", "O15.OAT", "WEATHER.OutdoorDryBulb", "SITE.outdoor_air_temperature"),
+    "HEAD_PRESSURE": ("ACC.HeadPressure", "O15.HEAD_PRESSURE", "CH-01.head_pressure"),
     "HP_SETPOINT": ("ACC.HeadPressureSetpoint", "O15.HP_SETPOINT"),
-    "COND_TEMP": ("ACC.CondTemp", "O15.COND_TEMP"),
-    "FAN_SPEED": ("ACC.FanSpeed", "O15.FAN_SPEED"),
-    "FAN_STATE": ("ACC.FanState", "O15.FAN_STATE"),
+    "COND_TEMP": ("ACC.CondTemp", "O15.COND_TEMP", "CH-01.condenser_water_temperature"),
+    "FAN_SPEED": ("ACC.FanSpeed", "O15.FAN_SPEED", "AHU-01.fan_speed"),
+    "FAN_STATE": ("ACC.FanState", "O15.FAN_STATE", "CH-01.status"),
     "FAN_POWER_KW": ("ACC.FanPower", "O15.FAN_POWER_KW"),
     "FANS_RUNNING": ("ACC.FansRunning", "O15.FANS_RUNNING"),
-    "COMPRESSOR_STATE": ("ACC.CompressorState", "O15.COMPRESSOR_STATE"),
+    "COMPRESSOR_STATE": ("ACC.CompressorState", "O15.COMPRESSOR_STATE", "CH-01.status"),
     "COMPRESSOR_POWER_KW": ("ACC.CompressorPower", "O15.COMPRESSOR_POWER_KW"),
-    "LOAD": ("ACC.Load", "O15.LOAD"),
+    "LOAD": ("ACC.Load", "O15.LOAD", "CH-01.load"),
     "POWER": ("ACC.Power", "O15.POWER"),
-    "RH": ("ACC.RH", "O15.RH"),
-    "ALARM": ("ACC.Alarm", "O15.ALARM"),
+    "RH": ("ACC.RH", "O15.RH", "WEATHER.OutdoorRH"),
+    "ALARM": ("ACC.Alarm", "O15.ALARM", "CH-01.alarms"),
 }
 
 DEFAULT_CONFIG = {
@@ -465,7 +472,7 @@ def history(hours: int = 24, building_id: Optional[str] = None) -> Dict[str, Any
                 "source": r.source,
             }
             for r in rows
-            if (r.source or "").upper() not in ("SIMULATION", "DEMO")
+            if (r.source or "").upper() not in ("ML_MODEL", "KAGGLE", "TRAINING_DATA")
         ]
         return {"period_hours": hours, "points": points, "fabricated": False}
     finally:
@@ -492,8 +499,8 @@ def ingest_points(points: List[Dict[str, Any]], building_id: Optional[str] = Non
             point_id=p["point_id"],
             value=p.get("value"),
             unit=p.get("unit"),
-            source=p.get("source") or "LIVE_BMS",
-            quality=p.get("quality") or "GOOD",
+            source=normalize_telemetry_source(p.get("source")),
+            quality=ingest_quality(p.get("value"), p.get("quality")),
             building_id=bid,
             equipment_id=p.get("equipment_id"),
         )

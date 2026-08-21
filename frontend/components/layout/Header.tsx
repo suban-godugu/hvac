@@ -7,6 +7,7 @@ import { DEFAULT_FACILITY_CONFIG } from '@/lib/facilityConfig';
 import { hvacFetch } from '@/lib/api/client';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
 import { useLiveTelemetry } from '@/lib/hvac/liveTelemetryStore';
+import type { TelemetryFrame } from '@/lib/hvac/telemetrySocket';
 import { Cpu, Sun, Sunrise, Sunset, Moon, Clock, MapPin } from 'lucide-react';
 
 function num(value: unknown): number | null {
@@ -57,6 +58,29 @@ export const Header: React.FC = () => {
   const telemetryLabel = live.telemetryStatus;
   const telemetryAge = live.telemetryAgeSeconds;
   const safeMode = live.safeMode;
+  const plantMode = live.plantMode || 'DATASET';
+  const applyFrame = useLiveTelemetry((s) => s.applyFrame);
+
+  const setPlant = async (mode: 'DATASET' | 'LIVE_BMS') => {
+    const res = await hvacFetch('/api/platform/plant-mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, reason: 'header-toggle' }),
+    });
+    if (!res.ok) return;
+    const status = await res.json();
+    applyFrame(
+      {
+        bms: status.bms,
+        telemetry: status.telemetry,
+        safeMode: Boolean(status.safeMode),
+        plantMode: status.plantMode,
+        controlEnabled: Boolean(status.controlEnabled),
+        events: useLiveTelemetry.getState().events,
+      },
+      useLiveTelemetry.getState().connectionState
+    );
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +102,19 @@ export const Header: React.FC = () => {
         const nextRh = num(weather?.humidity ?? weather?.oah);
         if (nextOat != null) setOat(nextOat);
         if (nextRh != null) setHumidity(nextRh);
+        if (body.plantMode === 'DATASET' || body.plantMode === 'LIVE_BMS') {
+          applyFrame(
+            {
+              bms: (body.bms as TelemetryFrame['bms']) || { status: String(body.bmsStatus || '') },
+              telemetry: (body.telemetry as TelemetryFrame['telemetry']) || { status: undefined },
+              safeMode: Boolean(body.safeMode),
+              plantMode: String(body.plantMode),
+              controlEnabled: Boolean(body.controlEnabled),
+              events: useLiveTelemetry.getState().events,
+            },
+            useLiveTelemetry.getState().connectionState
+          );
+        }
       } catch {
         /* keep last known */
       }
@@ -88,7 +125,7 @@ export const Header: React.FC = () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+  }, [applyFrame]);
 
   const [facilityTime, setFacilityTime] = useState({
     weekday: '',
@@ -170,21 +207,36 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden xl:flex items-center gap-1.5">
+          <div className="hidden md:flex h-8 rounded-lg border border-white/[0.08] bg-[#0d1524] p-0.5">
+            <button
+              type="button"
+              onClick={() => setPlant('DATASET')}
+              className={`px-2.5 text-[10px] font-semibold tracking-wide rounded-md ${
+                plantMode === 'DATASET' ? 'bg-amber-400/15 text-amber-200' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              DATASET
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlant('LIVE_BMS')}
+              className={`px-2.5 text-[10px] font-semibold tracking-wide rounded-md ${
+                plantMode === 'LIVE_BMS' ? 'bg-cyan-400/15 text-cyan-200' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              LIVE BMS
+            </button>
+          </div>
+          <div className="hidden md:flex items-center gap-1.5" title={`${modeLabel} · ${safetyStatus === 'PASS' ? 'SAFETY PASS' : 'SAFETY HOLD'}`}>
             <StatusBadge tone={bmsStatus === 'CONNECTED' ? 'live' : 'danger'} pulse={bmsStatus === 'CONNECTED'}>
               BMS {bmsStatus}
             </StatusBadge>
             <StatusBadge tone={toneForStatus(telemetryLabel)} pulse={telemetryLabel === 'LIVE'}>
-              TEL {telemetryLabel}
+              TEL {telemetryLabel} {ageText}
             </StatusBadge>
-            <StatusBadge tone="neutral" pulse={false}>
-              {modeLabel}
+            <StatusBadge tone={live.controlEnabled ? 'live' : 'muted'} pulse={false}>
+              {live.controlEnabled ? (plantMode === 'DATASET' ? 'SIM CONTROL ON' : 'CONTROL ENABLED') : 'CONTROL DISABLED'}
             </StatusBadge>
-            <StatusBadge tone={safetyStatus === 'PASS' ? 'live' : 'danger'} pulse={false}>
-              {safetyStatus === 'PASS' ? 'SAFETY PASS' : 'SAFETY HOLD'}
-            </StatusBadge>
-            <span className="text-[10px] font-mono text-slate-500 px-1.5">{ageText}</span>
-            <span className="text-[10px] font-mono tracking-wider text-slate-600 px-1">WRITE OFF</span>
           </div>
           <select
             value={agentMode}

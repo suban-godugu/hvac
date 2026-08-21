@@ -1,10 +1,10 @@
-"""Read-only BMS platform APIs. Writes are rejected with WRITE_DISABLED."""
+"""BMS platform APIs. Supervised writes go through evaluate_dispatch()."""
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from backend.bms.command_writer import write_disabled_body, write_point
+from backend.bms.command_writer import disable_supervised_writes, enable_supervised_writes, write_disabled_body, write_point
 from backend.bms.connection_manager import get_connection_manager
 from backend.middleware.request_id import current_request_id
 from backend.services import platform_bms_service as bms
@@ -28,6 +28,20 @@ class MappingRequest(BaseModel):
     bms_point_id: str
     direction: str = "READ"
     safety_enabled: bool = True
+
+
+class WriteEnableRequest(BaseModel):
+    confirm: bool = False
+
+
+class DispatchApplyRequest(BaseModel):
+    opportunity_id: str
+    point_id: Optional[str] = None
+    equipment_id: Optional[str] = None
+    current_value: Optional[float] = None
+    target_value: Optional[float] = None
+    confidence: Optional[float] = None
+    decision: Optional[str] = "OPTIMIZE"
 
 
 class SafetyEvaluateRequest(BaseModel):
@@ -96,15 +110,113 @@ async def plant():
 
 
 @router.post("/write-enable")
-async def write_enable():
-    body = write_disabled_body("Write enable is blocked during Phase 1 read-only commissioning.")
-    raise HTTPException(status_code=409, detail=body)
+async def write_enable(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    body = enable_supervised_writes(confirm=bool((payload or {}).get("confirm")))
+    if not body.get("enabled"):
+        raise HTTPException(status_code=409, detail=body)
+    return body
+
+
+@router.post("/write-disable")
+async def write_disable():
+    return disable_supervised_writes()
 
 
 @router.post("/write")
 async def write(payload: Dict[str, Any]):
+    from backend.services.hvac_safety_contract import evaluate_dispatch
+    from backend.services.platform_bms_service import platform_snapshot
+
+    snap = platform_snapshot()
+    tel = snap.get("telemetry") or {}
+    ctx = {
+        "action": "APPLY",
+        "opportunity_id": payload.get("opportunity_id") or payload.get("opportunity"),
+        "source": tel.get("source"),
+        "telemetry": {
+            "source": tel.get("source"),
+            "quality": tel.get("quality"),
+            "age_seconds": tel.get("ageSeconds"),
+            "raw": tel.get("status"),
+        },
+        "supervisory": {"decision": payload.get("decision") or "OPTIMIZE", "confidence": payload.get("confidence")},
+        "safety": {"status": snap.get("safety"), "passed": snap.get("safety") == "PASS"},
+        "current_value": payload.get("current_value"),
+        "target_value": payload.get("value") if payload.get("target_value") is None else payload.get("target_value"),
+    }
+    ok, reason, classified = evaluate_dispatch(ctx)
+    if not ok:
+        raise HTTPException(status_code=409, detail={**write_disabled_body(reason, classified.get("code") or "DISPATCH_BLOCKED"), "reason": reason})
     outcome = write_point(str(payload.get("point_id") or ""), float(payload.get("value") or 0))
-    raise HTTPException(status_code=409, detail={**write_disabled_body(), **outcome.as_dict()})
+    if not outcome.success:
+        raise HTTPException(status_code=409, detail={**write_disabled_body(outcome.message, outcome.code), **outcome.as_dict()})
+    return outcome.as_dict()
+
+
+@safety_router.post("/commands/apply")
+async def command_apply(req: DispatchApplyRequest):
+    from backend.agents.runtime.recommendation import recommend_and_maybe_apply
+    from backend.services.platform_bms_service import platform_snapshot
+
+    snap = platform_snapshot()
+    tel = snap.get("telemetry") or {}
+    result = recommend_and_maybe_apply(
+        opportunity=req.opportunity_id,
+        building_id=None,
+        point_id=req.point_id,
+        old_value=req.current_value,
+        new_value=req.target_value,
+        reason="SUPERVISED_APPLY",
+        user={},
+        mode="SUPERVISED",
+        context={
+            "source": tel.get("source"),
+            "telemetry": {
+                "source": tel.get("source"),
+                "quality": tel.get("quality"),
+                "age_seconds": tel.get("ageSeconds"),
+                "raw": tel.get("status"),
+            },
+            "supervisory": {"decision": req.decision or "OPTIMIZE", "confidence": req.confidence},
+            "safety": {"status": snap.get("safety"), "passed": snap.get("safety") == "PASS"},
+            "equipment_id": req.equipment_id,
+            "confidence": req.confidence,
+        },
+    )
+    if not result.get("allowed"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": (result.get("classified") or {}).get("code") or "DISPATCH_BLOCKED",
+                "message": result.get("reason") or "Dispatch blocked.",
+                "command": result.get("command"),
+            },
+        )
+    return result
+
+
+@safety_router.post("/commands/{command_id}/verify")
+async def command_verify(command_id: str):
+    from backend.agents.runtime.verification import verify_command
+
+    ok, reason = verify_command(command_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail={"code": reason, "message": reason, "command_id": command_id})
+    return {"ok": True, "status": reason, "command_id": command_id}
+
+
+@safety_router.post("/commands/{command_id}/rollback")
+async def command_rollback(command_id: str):
+    from backend.agents.runtime.verification import rollback_command
+
+    ok, reason = rollback_command(command_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail={"code": reason, "message": reason, "command_id": command_id})
+    return {"ok": True, "status": reason, "command_id": command_id}
 
 
 @safety_router.get("/safety/evaluate")

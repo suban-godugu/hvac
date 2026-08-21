@@ -5,8 +5,10 @@ Never stamps LIVE_BMS. Header TEL stays SIMULATED by design.
 from __future__ import annotations
 
 import math
+import os
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from backend.bms.connection_manager import is_simulation_mode
@@ -15,6 +17,8 @@ from backend.services.opportunity_feature_catalog import CATALOG
 
 _STOP = threading.Event()
 _THREAD: Optional[threading.Thread] = None
+_HISTORY_SEEDED = False
+_OVERRIDES: Dict[str, float] = {}
 
 _UNITS: Dict[str, Optional[str]] = {
     "zone_temperature": "°C",
@@ -99,6 +103,57 @@ _BASE: Dict[str, float] = {
 }
 
 
+_EXTRA: Dict[str, Tuple[str, Optional[str], float]] = {
+    "WEATHER.OutdoorDryBulb": ("SITE", "°C", 26.1),
+    "WEATHER.OutdoorRH": ("SITE", "%", 55.0),
+    "ZONE.AvgTemp": ("ZONE-01", "°C", 24.2),
+    "ZONE.OccupantCount": ("ZONE-01", None, 1.0),
+    "AHU-01.OutdoorAirDamper": ("AHU-01", "%", 42.0),
+    "AHU-01.SupplyAirTemp": ("AHU-01", "°C", 13.8),
+    "AHU-01.ReturnAirTemp": ("AHU-01", "°C", 24.0),
+    "AHU-01.SupplyFanState": ("AHU-01", None, 1.0),
+    "AHU-01.SupplyFanSpeed": ("AHU-01", "%", 68.0),
+    "AHU-01.EconomizerEnable": ("AHU-01", None, 1.0),
+    "AHU-01.PurgeState": ("AHU-01", None, 0.0),
+    "AHU-01.SupplyAirflow": ("AHU-01", "CFM", 7800.0),
+    "PARK.CO": ("ZONE-01", "ppm", 4.0),
+    "PARK.FanState": ("AHU-01", None, 1.0),
+    "PARK.FanSpeed": ("AHU-01", "%", 35.0),
+    "PARK.Damper": ("AHU-01", "%", 30.0),
+    "PARK.Airflow": ("AHU-01", "CFM", 4200.0),
+    "SCHW.IndexDP": ("P-01", "kPa", 85.0),
+    "SCHW.DPSetpoint": ("P-01", "kPa", 90.0),
+    "SCHW.MostOpenValve": ("P-01", "%", 88.0),
+    "SCHW.Flow": ("P-01", "L/s", 28.0),
+    "SCHW.Speed": ("P-01", "%", 62.0),
+    "SCHW.Power": ("P-01", "kW", 11.0),
+    "SCHW.SupplyTemp": ("CH-01", "°C", 7.2),
+    "SCHW.ReturnTemp": ("CH-01", "°C", 12.4),
+    "SCHW.CoolingCall": ("P-01", None, 1.0),
+    "ACC.OAT": ("SITE", "°C", 26.1),
+    "ACC.HeadPressure": ("CH-01", "kPa", 1180.0),
+    "ACC.HeadPressureSetpoint": ("CH-01", "kPa", 1200.0),
+    "ACC.CondTemp": ("CH-01", "°C", 38.0),
+    "ACC.FanSpeed": ("AHU-01", "%", 68.0),
+    "ACC.FanState": ("CH-01", None, 1.0),
+    "ACC.Load": ("CH-01", "tons", 183.0),
+    "ACC.CompressorState": ("CH-01", None, 1.0),
+    "ACC.RH": ("SITE", "%", 55.0),
+    "CW.SupplyTemp": ("CW-01", "°C", 29.0),
+    "CW.ReturnTemp": ("CW-01", "°C", 34.0),
+    "CW.HeadPressure": ("CH-01", "kPa", 1180.0),
+    "CW.CondTemp": ("CH-01", "°C", 31.0),
+    "CW.Flow": ("P-01", "L/s", 28.0),
+    "CW.PumpSpeed": ("P-01", "%", 62.0),
+    "CW.PumpState": ("P-01", None, 1.0),
+    "CW.Load": ("CH-01", "tons", 183.0),
+    "CW.OAT": ("SITE", "°C", 26.1),
+    "CW.WetBulb": ("SITE", "°C", 22.0),
+    "CW.CompressorState": ("CH-01", None, 1.0),
+    "CW.CoolingCall": ("CH-01", None, 1.0),
+}
+
+
 def _catalog_points() -> List[Tuple[str, str, str]]:
     seen = set()
     rows: List[Tuple[str, str, str]] = []
@@ -114,31 +169,103 @@ def _catalog_points() -> List[Tuple[str, str, str]]:
     return rows
 
 
-def publish_once() -> int:
+def _emit(
+    point_id: str,
+    value: float,
+    unit: Optional[str],
+    equipment_id: str,
+    timestamp: Optional[datetime] = None,
+) -> None:
+    record_point(
+        point_id=point_id,
+        value=value,
+        unit=unit,
+        source="SIMULATION",
+        quality="GOOD",
+        equipment_id=equipment_id,
+        timestamp=timestamp,
+    )
+
+
+def _value_for(canon: str, base: float, drift: float, oat: Optional[float]) -> float:
+    if canon == "outdoor_air_temperature" and oat is not None:
+        return float(oat)
+    if canon in ("enable", "status", "occupancy", "alarms"):
+        return float(base)
+    return round(float(base) * (1.0 + drift), 3)
+
+
+def _extra_value(pid: str, base: float, drift: float, oat: Optional[float], rh: Optional[float]) -> float:
+    if "OAT" in pid or pid.endswith("OutdoorDryBulb"):
+        return float(oat) if oat is not None else float(base)
+    if pid.endswith("OutdoorRH") or pid.endswith(".RH"):
+        return float(rh) if rh is not None else float(base)
+    if float(base) in (0.0, 1.0) and (
+        pid.endswith("State") or pid.endswith("Call") or pid.endswith("Count") or pid.endswith("Enable")
+    ):
+        return float(base)
+    return round(float(base) * (1.0 + drift), 3)
+
+
+def publish_once(timestamp: Optional[datetime] = None, tick: Optional[float] = None) -> int:
     from backend.services.weather_service import weather_service
 
     weather = weather_service.snapshot()
     oat = weather.get("oat")
+    rh = weather.get("humidity") or weather.get("oah")
     n = 0
-    drift = math.sin(time.time() / 40.0) * 0.04
+    t = time.time() if tick is None else float(tick)
+    drift = math.sin(t / 40.0) * 0.04
     for eq, canon, pid in _catalog_points():
-        base = _BASE.get(canon, 1.0)
-        if canon == "outdoor_air_temperature" and oat is not None:
-            value = float(oat)
-        elif canon in ("enable", "status", "occupancy", "alarms"):
-            value = base
+        if pid in _OVERRIDES:
+            value = float(_OVERRIDES[pid])
         else:
-            value = round(base * (1.0 + drift), 3)
-        record_point(
-            point_id=pid,
-            value=value,
-            unit=_UNITS.get(canon),
-            source="SIMULATION",
-            quality="GOOD",
-            equipment_id=eq,
-        )
+            base = _BASE.get(canon, 1.0)
+            value = _value_for(canon, base, drift, oat)
+        _emit(pid, value, _UNITS.get(canon), eq, timestamp=timestamp)
+        n += 1
+    for pid, (eq, unit, base) in _EXTRA.items():
+        if pid in _OVERRIDES:
+            value = float(_OVERRIDES[pid])
+        else:
+            value = _extra_value(pid, float(base), drift, oat, rh)
+        _emit(pid, value, unit, eq, timestamp=timestamp)
         n += 1
     return n
+
+
+def apply_simulated_write(point_id: str, value: float) -> None:
+    """Hold a synthetic setpoint so the feeder does not immediately overwrite it."""
+    pid = (point_id or "").strip()
+    if not pid:
+        return
+    _OVERRIDES[pid] = float(value)
+    eq, _, canon = pid.partition(".")
+    _emit(pid, float(value), _UNITS.get(canon) if canon else None, eq or None)
+
+
+def seed_synthetic_history(hours: float = 0.5, step_minutes: float = 10.0) -> int:
+    """Backfill SIMULATION samples so Agent Centre and charts have a recent series."""
+    global _HISTORY_SEEDED
+    hours = max(0.25, float(hours))
+    step = max(1.0, float(step_minutes))
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    steps = max(2, int((hours * 60.0) / step))
+    total = 0
+    for i in range(steps, 0, -1):
+        ts = now - timedelta(minutes=step * i)
+        tick = time.time() - (step * 60.0 * i)
+        total += publish_once(timestamp=ts, tick=tick)
+    total += publish_once(timestamp=now)
+    _HISTORY_SEEDED = True
+    return total
+
+
+def ensure_synthetic_plant() -> int:
+    """Publish the full O1–O20 catalog plus extra plant IDs. Never LIVE_BMS."""
+    if not _HISTORY_SEEDED:
+        return seed_synthetic_history()
+    return publish_once()
 
 
 def _loop(interval: float) -> None:
@@ -151,20 +278,45 @@ def _loop(interval: float) -> None:
         _STOP.wait(interval)
 
 
-def start_simulation_telemetry(interval: float = 8.0) -> None:
+def _use_simulation_flag() -> bool:
+    return os.getenv("HVAC_USE_SIMULATION", "0").strip() in ("1", "true", "TRUE")
+
+
+def _simulation_feed_enabled() -> bool:
+    from backend.services.platform_ops_service import PLANT_DATASET, get_plant_mode
+
+    if not _use_simulation_flag():
+        return False
+    if get_plant_mode() == PLANT_DATASET:
+        return True
+    # Local BMS simulation still feeds Agent Centre even if plant mode was left LIVE in SQLite.
+    return is_simulation_mode()
+
+
+def start_simulation_telemetry(interval: float = 8.0, force: bool = False) -> None:
     global _THREAD
     if not is_simulation_mode():
+        return
+    if not force and not _simulation_feed_enabled():
         return
     if _THREAD and _THREAD.is_alive():
         return
     _STOP.clear()
     try:
-        publish_once()
+        ensure_synthetic_plant()
     except Exception:
-        pass
+        try:
+            publish_once()
+        except Exception:
+            pass
     _THREAD = threading.Thread(target=_loop, args=(max(5.0, interval),), name="sim-telemetry", daemon=True)
     _THREAD.start()
 
 
 def stop_simulation_telemetry() -> None:
+    global _THREAD
     _STOP.set()
+    t = _THREAD
+    _THREAD = None
+    if t is not None and t.is_alive():
+        t.join(timeout=1.0)

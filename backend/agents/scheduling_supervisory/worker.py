@@ -82,7 +82,9 @@ class SchedulingControlWorker:
         response = self.agent.run_cycle(raw_telemetry)
         self.last_response = response
 
-        if self.agent.mode == AgentMode.AUTO and os.getenv("HVAC_ALLOW_SIM_WRITES", "0") in ("1", "true", "TRUE"):
+        from backend.bms.command_writer import simulated_writes_allowed
+
+        if self.agent.mode == AgentMode.AUTO and simulated_writes_allowed():
             candidate_actions = response.get("candidate_actions", [])
             for act in candidate_actions:
                 # Apply setpoint changes to physical simulator

@@ -1,0 +1,16 @@
+.env
+.env.local
+frontend
+frontend/node_modules
+frontend/.next
+frontend/.next-dev
+.hf-upload
+.git
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.db
+backend/ml/artifacts
+huggingface-space/static
+scratch
+reports

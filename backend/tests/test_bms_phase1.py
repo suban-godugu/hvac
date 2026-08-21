@@ -191,12 +191,12 @@ def test_write_disabled(client: TestClient, monkeypatch):
 
     out = write_point("AHU-01.sat_setpoint", 13.0)
     assert out.success is False
-    assert out.code == "WRITE_DISABLED"
+    assert out.code in ("WRITE_DISABLED", "SIMULATION_BLOCKED")
     assert SimulatorBMSGateway().write_point("x", 1).success is False
     assert ProductionBMSGateway().write_point("x", 1).success is False
     res = client.post("/api/platform/bms/write-enable")
     assert res.status_code == 409
-    assert res.json()["code"] == "WRITE_DISABLED"
+    assert res.json()["code"] in ("WRITE_DISABLED", "SIMULATION_MODE")
 
     monkeypatch.setattr("backend.services.hvac_safety_contract.production_bms_connected", lambda: True)
     ok, _, classified = evaluate_dispatch(
@@ -211,7 +211,7 @@ def test_write_disabled(client: TestClient, monkeypatch):
         }
     )
     assert ok is False
-    assert classified.get("code") == "WRITE_DISABLED"
+    assert classified.get("code") in ("WRITE_DISABLED", "SIMULATION_BLOCKED")
 
 
 def test_safe_mode_still_first():

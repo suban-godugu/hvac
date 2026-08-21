@@ -54,7 +54,44 @@ def get_maps(opportunity_id: Optional[str] = None):
 
 @router.get("/health")
 def get_health():
-    return opportunity_health()
+    try:
+        return opportunity_health()
+    except Exception as exc:
+        from backend.ml.features.maps import AGENT_FOR, OPPORTUNITY_MAPS
+
+        maps = {m["opportunity_id"]: m for m in OPPORTUNITY_MAPS}
+        rows = []
+        for i in range(1, 21):
+            oid = f"O{i}"
+            primary = maps.get(oid)
+            trainable = bool(primary and primary.get("training_allowed") and primary.get("target_column"))
+            rows.append(
+                {
+                    "opportunity_id": oid,
+                    "agent_id": (primary or {}).get("agent_id") or AGENT_FOR.get(oid),
+                    "dataset_id": (primary or {}).get("dataset_id"),
+                    "dataset_name": None,
+                    "dataset_status": None,
+                    "dataset_quality": None,
+                    "feature_map": (primary or {}).get("feature_map") or {},
+                    "target": (primary or {}).get("target_column"),
+                    "task_type": (primary or {}).get("task_type"),
+                    "training_allowed": trainable,
+                    "notes": (primary or {}).get("notes") or "No legitimate mapping.",
+                    "missing_dataset": (primary or {}).get("missing_dataset"),
+                    "model_id": None,
+                    "model_version": None,
+                    "status": "MODEL_NOT_TRAINABLE" if oid == "O10" or not trainable else "MODEL_NOT_AVAILABLE",
+                    "validation_status": "N/A",
+                    "metrics": None,
+                    "last_trained": None,
+                    "prediction_availability": "UNAVAILABLE",
+                    "provenance": "TRAINING DATA",
+                    "last_prediction": None,
+                    "training_run": None,
+                }
+            )
+        return {"opportunities": rows, "source": "TRAINING_DATASET", "datasets": [], "degraded": type(exc).__name__}
 
 
 @router.get("/models")

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Radio } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
+import { EmptyState } from '@/components/hvac/EmptyState';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
 
@@ -79,6 +80,9 @@ export default function BmsPage() {
   const deviceRows = devices.data?.devices || [];
   const pointRows = points.data?.points || [];
   const mapRows = mappings.data?.mappings || [];
+  const catalog = mappings.data?.catalog || [];
+  const livePlant = st.plantMode === 'LIVE_BMS';
+  const defaultPorts: Record<string, string> = { bacnet: '47808', modbus: '502', mqtt: '1883', rest: '443' };
 
   return (
     <div className="space-y-6 pb-12">
@@ -87,12 +91,21 @@ export default function BmsPage() {
         READ-ONLY COMMISSIONING — BMS writes are disabled. Map only discovered points.
       </div>
 
-      <section className="panel-card p-5 space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <section className="glass-card p-5 space-y-4 xl:col-span-5">
         <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">BMS Connection</div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <label className="text-[11px] text-slate-400 space-y-1.5">
             Protocol
-            <select value={protocol} onChange={(e) => setProtocol(e.target.value)} className="form-control">
+            <select
+              value={protocol}
+              onChange={(e) => {
+                const next = e.target.value;
+                setProtocol(next);
+                setPort(defaultPorts[next] || '47808');
+              }}
+              className="form-control"
+            >
               <option value="bacnet">BACnet/IP</option>
               <option value="modbus">Modbus TCP</option>
               <option value="mqtt">MQTT</option>
@@ -114,11 +127,16 @@ export default function BmsPage() {
         <div className="text-[11px] font-mono text-slate-500">
           Last connected: {st.last_connected_at || '—'} · Last error: {st.last_error || '—'} · Protocol: {st.protocol || protocol}
         </div>
+        {!livePlant && (
+          <div className="text-[11px] text-amber-200">
+            Switch the header to Live BMS before CONNECT. Dataset mode never opens a production gateway.
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-ghost" onClick={() => connect(true)}>
             TEST CONNECTION
           </button>
-          <button type="button" className="btn-primary" onClick={() => connect(false)}>
+          <button type="button" className="btn-primary" onClick={() => connect(false)} disabled={!livePlant || !host.trim()}>
             CONNECT
           </button>
           <button type="button" className="btn-ghost" onClick={() => post.mutate('/api/platform/bms/disconnect')}>
@@ -131,7 +149,8 @@ export default function BmsPage() {
         {message && <div className="text-[11px] font-mono text-amber-300">{message}</div>}
       </section>
 
-      <section className="panel-card p-4 space-y-3">
+      <div className="xl:col-span-7 space-y-4">
+      <section className="glass-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Devices</div>
           <StatusBadge tone="neutral" pulse={false}>
@@ -139,7 +158,7 @@ export default function BmsPage() {
           </StatusBadge>
         </div>
         {deviceRows.length === 0 ? (
-          <div className="text-sm text-slate-500 font-mono">0 devices</div>
+          <EmptyState title="0 devices" detail="Connect and discover. Nothing is invented until the gateway returns devices." />
         ) : (
           <table className="bms-table">
             <thead>
@@ -166,7 +185,7 @@ export default function BmsPage() {
         )}
       </section>
 
-      <section className="panel-card p-4 space-y-3">
+      <section className="glass-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Points</div>
           <StatusBadge tone="neutral" pulse={false}>
@@ -174,7 +193,7 @@ export default function BmsPage() {
           </StatusBadge>
         </div>
         {pointRows.length === 0 ? (
-          <div className="text-sm text-slate-500 font-mono">0 points</div>
+          <EmptyState title="0 points" detail="Select a discovered device. Values stay empty until the BMS reports them." />
         ) : (
           <table className="bms-table">
             <thead>
@@ -205,12 +224,37 @@ export default function BmsPage() {
           </table>
         )}
       </section>
+      </div>
+      </div>
 
-      <section className="panel-card p-4 space-y-3">
+      <section className="glass-card p-4 space-y-3">
         <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Mapping</div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <input className="form-control" value={mapForm.equipment_id} onChange={(e) => setMapForm({ ...mapForm, equipment_id: e.target.value })} placeholder="AHU-01" />
-          <input className="form-control" value={mapForm.canonical_point} onChange={(e) => setMapForm({ ...mapForm, canonical_point: e.target.value })} placeholder="supply_air_temperature" />
+          <select
+            className="form-control"
+            value={`${mapForm.equipment_id}.${mapForm.canonical_point}`}
+            onChange={(e) => {
+              const [eq, ...rest] = e.target.value.split('.');
+              setMapForm({
+                ...mapForm,
+                equipment_id: eq || mapForm.equipment_id,
+                canonical_point: rest.join('.') || mapForm.canonical_point,
+              });
+            }}
+          >
+            {(catalog.length
+              ? catalog
+              : [{ qualified: 'AHU-01.supply_air_temperature', equipment_id: 'AHU-01', canonical_point: 'supply_air_temperature' }]
+            ).map((c: { qualified?: string; canonical_point: string; equipment_id?: string }) => {
+              const q = c.qualified || `${c.equipment_id}.${c.canonical_point}`;
+              return (
+                <option key={q} value={q}>
+                  {q}
+                </option>
+              );
+            })}
+          </select>
           <input className="form-control" value={mapForm.bms_point_id} onChange={(e) => setMapForm({ ...mapForm, bms_point_id: e.target.value })} placeholder="discovered point id" />
           <select className="form-control" value={mapForm.direction} onChange={(e) => setMapForm({ ...mapForm, direction: e.target.value })}>
             <option value="READ">READ</option>
@@ -221,7 +265,7 @@ export default function BmsPage() {
           </button>
         </div>
         {mapRows.length === 0 ? (
-          <div className="text-sm text-slate-500 font-mono">No mappings</div>
+          <EmptyState title="No mappings" detail="Select a discovered point, then save a canonical mapping. BACnet IDs are never invented here." />
         ) : (
           <table className="bms-table">
             <thead>
@@ -250,10 +294,45 @@ export default function BmsPage() {
         )}
       </section>
 
-      <section className="panel-card p-4">
+      <section className="glass-card p-4 space-y-2">
         <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Commissioning status</div>
-        <div className="mt-2 text-sm text-slate-200">READ-ONLY COMMISSIONING</div>
-        <div className="text-[11px] font-mono text-slate-500 mt-1">BMS WRITE: DISABLED</div>
+        <div className="mt-2 text-sm text-slate-200">{st.write_enabled ? 'SUPERVISED WRITES ARMED' : 'READ-ONLY COMMISSIONING'}</div>
+        <div className="text-[11px] font-mono text-slate-500 mt-1">
+          HVAC_BMS_WRITE_ENABLED must be 1 on the server · BMS WRITE: {st.write_enabled ? 'ENABLED' : 'DISABLED'}
+        </div>
+        <div className="flex flex-wrap gap-2 pt-2">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!livePlant || mapRows.length === 0}
+            title="Requires Live BMS, mappings, HVAC_BMS_WRITE_ENABLED=1, and safety review"
+            onClick={() =>
+              hvacFetch('/api/platform/bms/write-enable', {
+                method: 'POST',
+                body: JSON.stringify({ confirm: true }),
+              }).then(async (res) => {
+                const body = await res.json();
+                setMessage(body.message || body.code || body.status);
+                qc.invalidateQueries();
+              })
+            }
+          >
+            ENABLE WRITES
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() =>
+              hvacFetch('/api/platform/bms/write-disable', { method: 'POST' }).then(async (res) => {
+                const body = await res.json();
+                setMessage(body.message || body.code || 'WRITE_DISABLED');
+                qc.invalidateQueries();
+              })
+            }
+          >
+            DISABLE WRITES
+          </button>
+        </div>
       </section>
     </div>
   );

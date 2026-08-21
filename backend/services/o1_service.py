@@ -64,7 +64,10 @@ def _ensure_run() -> str:
 
 class O1Service:
     def __init__(self):
-        ensure_point_map_and_config()
+        try:
+            ensure_point_map_and_config()
+        except Exception:
+            pass
         self.current_ahu_state = "OFF"
         self.bms_status = "PENDING"
 

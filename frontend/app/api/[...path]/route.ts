@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const API_ORIGIN = process.env.HVAC_API_ORIGIN || 'http://127.0.0.1:8000';
+function apiOrigin(): string {
+  return process.env['HVAC_API_ORIGIN'] || 'http://127.0.0.1:8000';
+}
 
 async function proxy(req: NextRequest, path: string[]) {
-  const dest = `${API_ORIGIN}/api/${path.join('/')}${req.nextUrl.search}`;
+  const dest = `${apiOrigin()}/api/${path.join('/')}${req.nextUrl.search}`;
   try {
-    const headers = new Headers(req.headers);
-    headers.delete('host');
+    const headers = new Headers();
+    const skip = new Set([
+      'host',
+      'connection',
+      'content-length',
+      'transfer-encoding',
+      'accept-encoding',
+    ]);
+    req.headers.forEach((value, key) => {
+      if (!skip.has(key.toLowerCase())) headers.set(key, value);
+    });
     const method = req.method.toUpperCase();
     const res = await fetch(dest, {
       method,
@@ -16,13 +27,19 @@ async function proxy(req: NextRequest, path: string[]) {
       body: method === 'GET' || method === 'HEAD' ? undefined : await req.arrayBuffer(),
       cache: 'no-store',
     });
-    const out = new Headers(res.headers);
-    return new NextResponse(res.body, { status: res.status, headers: out });
+    const buf = await res.arrayBuffer();
+    const out = new Headers();
+    res.headers.forEach((value, key) => {
+      const k = key.toLowerCase();
+      if (['content-encoding', 'content-length', 'transfer-encoding', 'connection'].includes(k)) return;
+      out.set(key, value);
+    });
+    return new NextResponse(buf, { status: res.status, headers: out });
   } catch {
     return NextResponse.json(
       {
         code: 'BACKEND_OFFLINE',
-        message: 'HVAC API is not running on port 8000. Start: uvicorn backend.main:app --reload --port 8000',
+        message: 'HVAC API is unreachable. Set HVAC_API_ORIGIN to the live FastAPI URL.',
       },
       { status: 503 }
     );

@@ -33,7 +33,8 @@ async function restFrame(): Promise<TelemetryFrame | null> {
       bms,
       telemetry,
       safeMode: Boolean(status.safeMode),
-      controlEnabled: false,
+      plantMode: status.plantMode || null,
+        controlEnabled: Boolean(status.controlEnabled),
       events,
     };
   } catch {

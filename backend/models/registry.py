@@ -15,8 +15,11 @@ AGENT_MODELS = {
     "o4": os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "agents", "scheduling_supervisory", "o4_chiller_staging", "models")),
 }
 for m in ["o1", "o2", "o3", "o4"]:
-    os.makedirs(os.path.join(MODELS_DIR, m), exist_ok=True)
-    os.makedirs(AGENT_MODELS[m], exist_ok=True)
+    try:
+        os.makedirs(os.path.join(MODELS_DIR, m), exist_ok=True)
+        os.makedirs(AGENT_MODELS[m], exist_ok=True)
+    except OSError:
+        pass
 
 
 class ModelRegistry:

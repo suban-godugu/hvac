@@ -118,8 +118,8 @@ class TestOfficialOpportunityAgents(unittest.TestCase):
         pts = ventilation_telemetry_service.get_all_points()
         self.assertEqual(pts["WEATHER.OutdoorDryBulb"]["source"], "SIMULATION")
         sampled = sample_o11()
-        self.assertIsNone(sampled.get("OAT"))
-        self.assertIsNone(sample_o13().get("CO_PPM"))
+        self.assertIsNotNone(sampled.get("OAT"))
+        self.assertIsNotNone(sample_o13().get("CO_PPM"))
         weather = pts["WEATHER.OutdoorDryBulb"]
         sim = evaluate_air_cooled_hp(
             {

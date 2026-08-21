@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from backend.bms.command_writer import physical_writes_allowed, write_enabled_flag
+from backend.bms.command_writer import control_writes_status, physical_writes_allowed, simulated_writes_allowed, write_enabled_flag
 from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
 from backend.bms.point_mapper import canonical_catalog, mapping_to_dict
 from backend.services.canonical_telemetry_service import latest_points
@@ -30,7 +30,7 @@ def _building() -> Optional[Dict[str, Any]]:
 
 def _sync_building(site: Dict[str, Any]) -> Dict[str, Any]:
     building = _building() or {}
-    name = site.get("name") or building.get("name") or "Skyline Corporate Center"
+    name = site.get("name") or building.get("name") or "Senatria Corporation"
     location = site.get("location") or building.get("location")
     try:
         from database.session import SessionLocal
@@ -122,6 +122,7 @@ def classify_platform_telemetry(points: List[Dict[str, Any]], bms_connected: boo
 
 
 def platform_snapshot() -> Dict[str, Any]:
+    from backend.services.platform_ops_service import get_plant_mode
     from backend.workers.watchdog import watchdog_status
     from backend.services.simulation_service import sim_service
 
@@ -131,17 +132,26 @@ def platform_snapshot() -> Dict[str, Any]:
     points = latest_points(limit=40)
     tel = classify_platform_telemetry(points, connected)
     safe = is_safe_mode()
+    plant = get_plant_mode()
+    dataset = plant == "DATASET"
     try:
         mode = getattr(getattr(sim_service, "orchestrator", None), "mode", None)
         mode_s = getattr(mode, "value", None) or str(mode or "ADVISORY")
     except Exception:
         mode_s = "ADVISORY"
-    control = False  # Phase 1 read-only
+    control = physical_writes_allowed() or simulated_writes_allowed()
     bms_status = "CONNECTED" if connected else "DISCONNECTED"
+    if dataset:
+        bms_status = "DISCONNECTED"
+        tel = {**tel, "status": "SIMULATED"}
+        connected = False
+    elif str(tel.get("status") or "").upper() == "SIMULATED":
+        tel = {**tel, "status": "NO_DATA"}
     site = _facility_and_weather()
     return {
         "safeMode": safe,
         "bmsConnected": connected,
+        "plantMode": plant,
         "bms": {
             "status": bms_status,
             "protocol": health.protocol,
@@ -156,7 +166,7 @@ def platform_snapshot() -> Dict[str, Any]:
         "telemetry": tel,
         "telemetryAgeSeconds": tel.get("ageSeconds"),
         "controlEnabled": control,
-        "writeEnabled": write_enabled_flag() and physical_writes_allowed(),
+        "writeEnabled": (write_enabled_flag() and physical_writes_allowed()) or simulated_writes_allowed(),
         "mode": mode_s,
         "safety": "SAFE_HOLD" if safe else "PASS",
         "deploymentMode": os.getenv("HVAC_DEPLOYMENT_MODE", "local"),
@@ -165,7 +175,7 @@ def platform_snapshot() -> Dict[str, Any]:
         "building": site["building"],
         "facility": site["facility"],
         "weather": site["weather"],
-        "commissioning": "READ_ONLY",
+        "commissioning": "SUPERVISED" if physical_writes_allowed() else "READ_ONLY",
     }
 
 
@@ -193,10 +203,12 @@ def bms_status() -> Dict[str, Any]:
         **snap["bms"],
         "devices": n_dev,
         "points": n_pt,
-        "write_enabled": False,
-        "commissioning": "READ_ONLY",
+        "write_enabled": bool(snap.get("writeEnabled")),
+        "commissioning": snap.get("commissioning") or "READ_ONLY",
         "connected": snap["bmsConnected"],
         "status": snap["bms"]["status"],
+        "plantMode": snap.get("plantMode"),
+        "telemetry": snap.get("telemetry"),
     }
 
 
@@ -289,8 +301,13 @@ def put_mapping(body: Dict[str, Any]) -> Dict[str, Any]:
     import uuid
     from datetime import datetime, timezone
 
+    from backend.bms.point_mapper import CANONICAL_POINTS, resolve_canonical_name
+
     equipment_id = str(body.get("equipment_id") or "").strip()
-    canonical_point = str(body.get("canonical_point") or "").strip()
+    canonical_point = resolve_canonical_name(str(body.get("canonical_point") or "").strip())
+    allowed = {name for names in CANONICAL_POINTS.values() for name in names}
+    if canonical_point not in allowed:
+        raise ValueError(f"Unknown canonical point: {canonical_point}")
     bms_point_id = str(body.get("bms_point_id") or "").strip()
     direction = str(body.get("direction") or "READ").strip().upper()
     safety_enabled = bool(body.get("safety_enabled", True))
@@ -331,9 +348,16 @@ def put_mapping(body: Dict[str, Any]) -> Dict[str, Any]:
             row.updated_at = now
         db.commit()
         db.refresh(row)
-        return mapping_to_dict(row, pt)
+        payload = mapping_to_dict(row, pt)
     finally:
         db.close()
+    try:
+        from backend.bms.telemetry_reader import poll_once
+
+        poll_once(include_unmapped=False)
+    except Exception:
+        pass
+    return payload
 
 
 def mapped_telemetry() -> List[Dict[str, Any]]:
@@ -390,11 +414,12 @@ def agent_groups() -> List[Dict[str, Any]]:
     snap = platform_snapshot()
     from backend.services.agent_recommendation_service import build_recommendation
     from backend.services.agent_telemetry_service import get_agent_context
+    from backend.services.opportunity_feature_catalog import catalog_for
 
     groups = [
         {"id": "scheduling", "title": "Scheduling", "opportunities": ["O1", "O2", "O3", "O4"], "href": "/agents/scheduling"},
         {"id": "plant-control", "title": "Plant Control", "opportunities": ["O5", "O6", "O7", "O8", "O9"], "href": "/agents/plant-control"},
-        {"id": "ventilation", "title": "Ventilation", "opportunities": ["O11", "O12", "O13"], "href": "/agents/ventilation-airflow"},
+        {"id": "ventilation", "title": "Ventilation", "opportunities": ["O10", "O11", "O12", "O13"], "href": "/agents/ventilation-airflow"},
         {"id": "variable-speed", "title": "Variable Speed", "opportunities": ["O14", "O15", "O16"], "href": "/agents/variable-speed"},
         {"id": "operations", "title": "Operations & Maintenance", "opportunities": ["O17", "O18", "O19", "O20"], "href": "/agents/operations-maintenance"},
     ]
@@ -431,13 +456,15 @@ def agent_groups() -> List[Dict[str, Any]]:
             else:
                 tel_label = "NO DATA"
             sources.append(tel_label)
+            spec = catalog_for(oid)
+            ctrl = "WRITE DISABLED" if not spec.get("control") else control_writes_status()
             cards.append(
                 {
                     "id": oid,
                     "status": agent_label,
                     "telemetry": tel_label,
                     "recommendation": rec.get("recommendation_status"),
-                    "control": "WRITE DISABLED",
+                    "control": ctrl,
                     "missing_features": ctx.get("missing_features") or [],
                 }
             )
@@ -450,7 +477,7 @@ def agent_groups() -> List[Dict[str, Any]]:
             row["status"] = "READY"
         else:
             row["status"] = "HOLD"
-        row["controlAvailability"] = "WRITE DISABLED"
+        row["controlAvailability"] = control_writes_status()
         row["bms"] = snap["bms"]["status"]
         row["telemetry"] = sources[0] if sources else "NO DATA"
         row["recommendation"] = "AVAILABLE" if any(r == "AVAILABLE" for r in recs) else "UNAVAILABLE"
@@ -489,14 +516,15 @@ def evaluate_safety(context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         "bms": snap["bms"]["status"],
         "telemetry": tel.get("status"),
         "safeMode": snap["safeMode"],
-        "controlEnabled": False,
+        "safety": snap.get("safety"),
+        "controlEnabled": bool(snap.get("controlEnabled")),
         "checks": {
             "bms_connected": snap["bmsConnected"],
             "telemetry_live": tel.get("status") == "LIVE",
             "quality_good": (tel.get("quality") or "").upper() == "GOOD",
             "fresh": tel.get("status") == "LIVE",
             "safe_mode": snap["safeMode"],
-            "write_enabled": False,
+            "write_enabled": bool(snap.get("writeEnabled")),
         },
     }
 

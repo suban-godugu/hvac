@@ -42,7 +42,7 @@ class VentilationTelemetryService:
         }
 
     def get_all_points(self) -> Dict[str, Any]:
-        """Returns in-memory SIMULATION points. Official GET paths ignore source=SIMULATION."""
+        """Returns in-memory SIMULATION points. Dataset mode may read them; they are never LIVE_BMS."""
         now = datetime.now(timezone.utc)
         hour = now.hour
         try:

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
 import { hvacFetch } from '@/lib/api/client';
 import { LIVE_POLL_MS } from '@/lib/hvac/poll';
+import { EmptyState } from '@/components/hvac/EmptyState';
 import { displayValue, useLiveTelemetry } from '@/lib/hvac/liveTelemetryStore';
 
 export default function TelemetryPage() {
@@ -46,9 +47,14 @@ export default function TelemetryPage() {
         </StatusBadge>
       </div>
       {events.length === 0 ? (
-        <div className="panel-card p-6 text-sm text-slate-500">NO DATA</div>
+        <EmptyState
+          title="NO DATA"
+          detail="No mapped LIVE points on the stream yet. Map discovered BMS points; missing sensors stay empty — never filled with zero."
+          href="/platform/bms"
+          actionLabel="Open BMS mapping"
+        />
       ) : (
-        <div className="panel-card overflow-x-auto">
+        <div className="glass-card overflow-x-auto max-h-[70vh]">
           <table className="bms-table">
             <thead>
               <tr>
@@ -71,7 +77,7 @@ export default function TelemetryPage() {
                   <tr key={pid + String(p.timestamp || i)}>
                     <td className="font-mono text-slate-200">{p.equipment_id || '—'}</td>
                     <td className="font-mono">{p.point || '—'}</td>
-                    <td>{shown}</td>
+                    <td className={q === 'GOOD' ? 'text-emerald-300' : q === 'STALE' ? 'text-amber-300' : q === 'BAD' ? 'text-rose-300' : 'text-slate-400'}>{shown}</td>
                     <td>{p.unit || '—'}</td>
                     <td>{p.quality || '—'}</td>
                     <td>{p.source || '—'}</td>

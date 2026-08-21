@@ -1,0 +1,12 @@
+.git
+.github
+.hf-upload
+frontend
+huggingface-space/static
+**/__pycache__
+**/*.pyc
+**/*.db
+**/.venv
+frontend/node_modules
+.env
+.env.local

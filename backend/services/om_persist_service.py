@@ -24,13 +24,22 @@ from database.models_opportunities import (
 from backend.services.opportunity_persist_service import (
     LIVE_QUALITY,
     _is_live_row,
+    _is_readable_row,
     _latest_opt,
     ensure_catalog,
     persist_optimization,
     audit,
 )
 
-SIM_SOURCE = "SIMULATION"
+def _production_live(*flags: bool) -> bool:
+    try:
+        from backend.bms.connection_manager import is_simulation_mode
+
+        if is_simulation_mode():
+            return False
+    except Exception:
+        return False
+    return any(flags)
 
 
 def _now() -> datetime:
@@ -58,7 +67,7 @@ def persist_energy_reading(payload: Dict[str, Any]) -> int:
         source = payload.get("source", "BACnet_IP_PowerMeter")
     finally:
         db.close()
-    if _is_live_row(quality, source):
+    if _is_readable_row(quality, source):
         persist_optimization(
             "O17",
             {
@@ -203,7 +212,7 @@ def get_o17_state() -> Dict[str, Any]:
             (
                 r
                 for r in tel
-                if _is_live_row(r.quality, r.source) and (r.meter_id or "") != "MAIN-ELEC-METER"
+                if _is_readable_row(r.quality, r.source) and (r.meter_id or "") != "MAIN-ELEC-METER"
             ),
             None,
         )
@@ -214,7 +223,7 @@ def get_o17_state() -> Dict[str, Any]:
         opt = _latest_opt(db, "O17")
         return {
             "opportunity_id": "O17",
-            "live": live_tel is not None or opt is not None,
+            "live": _production_live(live_tel is not None, opt is not None),
             "power_kw": live_tel.power_kw if live_tel else None,
             "meter_id": live_tel.meter_id if live_tel else None,
             "baseline_kw": baseline.baseline_hvac_power_kw if baseline else None,
@@ -243,7 +252,7 @@ def get_o18_state() -> Dict[str, Any]:
         latest = completions[0] if completions else None
         return {
             "opportunity_id": "O18",
-            "live": bool(programs) or bool(completions),
+            "live": _production_live(bool(programs), bool(completions)),
             "programs": [
                 {"id": p.id, "topic": p.topic, "program_name": p.program_name, "required": p.required, "status": p.status}
                 for p in programs
@@ -275,7 +284,7 @@ def get_o19_state() -> Dict[str, Any]:
         open_order = next((o for o in orders if o.status != "COMPLETED"), orders[0] if orders else None)
         return {
             "opportunity_id": "O19",
-            "live": bool(orders),
+            "live": _production_live(bool(orders)),
             "findings": [
                 {
                     "id": o.id,
@@ -310,7 +319,7 @@ def get_o20_state() -> Dict[str, Any]:
         opt = _latest_opt(db, "O20")
         return {
             "opportunity_id": "O20",
-            "live": row is not None,
+            "live": _production_live(row is not None),
             "controller": None
             if row is None
             else {

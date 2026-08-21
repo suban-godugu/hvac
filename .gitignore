@@ -15,3 +15,5 @@ backend/ml/artifacts/
 database/worker_heartbeat.txt
 .cursor/
 debug-*.log
+.hf-upload/
+.vercel

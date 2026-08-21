@@ -92,6 +92,12 @@ class ModbusGateway(BMSGateway):
     def read_points(self, point_ids: List[str]) -> List[PointReading]:
         return [self.read_point(p) for p in point_ids]
 
+    def execute_write(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
+        del priority
+        if not getattr(self, "_connected", False):
+            return WriteOutcome(success=False, code=CONNECTION_FAILED, message="Modbus adapter is not connected.", point_id=point_id, value=value)
+        return WriteOutcome(success=False, code=ADAPTER_UNAVAILABLE, message="Modbus write requires a commissioned register map.", point_id=point_id, value=value)
+
     def write_point(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
         return reject_write(point_id, value, priority)
 

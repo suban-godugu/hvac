@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from backend.bms.point_mapper import resolve_canonical_name
 from backend.services.canonical_telemetry_service import as_contract, latest_points
-from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source, is_safe_mode
+from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source, is_safe_mode, accepts_telemetry_source
 from backend.services.opportunity_feature_catalog import catalog_for
 
 
@@ -18,8 +18,11 @@ def _now_row(point_id: str, building_id: Optional[str] = None) -> Optional[Dict[
         q = db.query(CanonicalTelemetryDB).filter(CanonicalTelemetryDB.point_id == point_id)
         if building_id:
             q = q.filter(CanonicalTelemetryDB.building_id == building_id)
-        row = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).first()
-        return as_contract(row) if row else None
+        rows = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).limit(40).all()
+        for row in rows:
+            if accepts_telemetry_source(row.source):
+                return as_contract(row)
+        return None
     finally:
         db.close()
 
@@ -133,6 +136,7 @@ def get_agent_context(
     src, quality, age = _overall_source(features)
     tel_class = classify_telemetry({"quality": quality, "age_seconds": age, "source": src, "value": 1 if not missing else None}, src)
 
+    from backend.bms.command_writer import physical_writes_allowed, simulated_writes_allowed
     from backend.bms.connection_manager import get_connection_manager
 
     connected = bool(get_connection_manager().is_production_connected())
@@ -167,7 +171,7 @@ def get_agent_context(
         "features": features,
         "missing_features": missing,
         "status": status,
-        "control": "WRITE_DISABLED",
+        "control": "WRITE_ENABLED" if physical_writes_allowed() or simulated_writes_allowed() else "WRITE_DISABLED",
         "kind": spec.get("kind") or "CONTROL",
         "safeMode": safe,
         "bmsConnected": connected,

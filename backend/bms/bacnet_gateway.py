@@ -125,6 +125,19 @@ class BacnetGateway(BMSGateway):
     def read_points(self, point_ids: List[str]) -> List[PointReading]:
         return [self.read_point(pid) for pid in point_ids]
 
+    def execute_write(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
+        del priority
+        if not self._connected:
+            return WriteOutcome(success=False, code=CONNECTION_FAILED, message="BACnet adapter is not connected.", point_id=point_id, value=value)
+        writer = getattr(self._stack, "write", None) or getattr(self._stack, "write_property", None)
+        if not callable(writer):
+            return WriteOutcome(success=False, code=ADAPTER_UNAVAILABLE, message="BACnet stack has no write API.", point_id=point_id, value=value)
+        try:
+            writer(point_id, value)
+            return WriteOutcome(success=True, code="OK", message="WRITTEN", point_id=point_id, value=value)
+        except Exception as exc:
+            return WriteOutcome(success=False, code=CONNECTION_FAILED, message=str(exc), point_id=point_id, value=value)
+
     def write_point(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
         return reject_write(point_id, value, priority)
 

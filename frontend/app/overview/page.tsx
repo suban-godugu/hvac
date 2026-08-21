@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { KPIGrid } from '@/components/hvac/KPIGrid';
 import { OpportunityCard } from '@/components/hvac/OpportunityCard';
 import { StatusBadge } from '@/components/hvac/StatusBadge';
+import { EmptyState } from '@/components/hvac/EmptyState';
 import {
   HVAC_SECTIONS,
   fleetOpportunityCards,
@@ -71,7 +72,12 @@ function LivePlant({
         <span className="text-[11px] font-mono text-slate-600">{telStatus || 'NO DATA'}</span>
       </div>
       {empty ? (
-        <div className="panel-card p-5 text-[12px] text-slate-500">NO DATA — map canonical points on the BMS page</div>
+        <EmptyState
+          title="NO DATA"
+          detail="No mapped plant equipment yet. Discover the BMS and map canonical points — missing sensors stay empty."
+          href="/platform/bms"
+          actionLabel="Open BMS mapping"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {groups.map((g) =>

@@ -5,7 +5,14 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source
+from backend.services.hvac_safety_contract import (
+    STALE_SECONDS,
+    classify_telemetry,
+    ingest_quality,
+    is_demo_source,
+    normalize_telemetry_source,
+    accepts_telemetry_source,
+)
 from backend.services.ttl_cache import cache_clear, cache_get, cache_set
 
 _LATEST_TTL = float(os.getenv("HVAC_LATEST_POINTS_TTL", "2.5"))
@@ -31,14 +38,10 @@ def record_point(
 ) -> Dict[str, Any]:
     ts = timestamp or _now()
     age = max(0.0, (_now() - ts).total_seconds())
-    q = (quality or "MISSING").upper()
-    src = source or "DEMO"
-    if value is None and q not in ("MISSING", "BAD"):
-        q = "MISSING"
-    if is_demo_source(src):
-        src = "SIMULATION" if "SIMUL" in src.upper() else "DEMO"
-        if q == "LIVE":
-            q = "GOOD"
+    src = normalize_telemetry_source(source)
+    q = ingest_quality(value, quality)
+    if is_demo_source(src) and q == "LIVE":
+        q = "GOOD"
     if age > STALE_SECONDS and q == "GOOD" and src in LIVE_SOURCES:
         q = "STALE"
     from database.session import SessionLocal
@@ -119,8 +122,20 @@ def latest_points(building_id: Optional[str] = None, limit: int = 50) -> List[Di
         q = db.query(CanonicalTelemetryDB)
         if building_id:
             q = q.filter(CanonicalTelemetryDB.building_id == building_id)
-        rows = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).limit(limit).all()
-        payload = [as_contract(r) for r in rows]
+        fetch = max(int(limit) * 6, 80)
+        rows = q.order_by(CanonicalTelemetryDB.timestamp.desc(), CanonicalTelemetryDB.id.desc()).limit(fetch).all()
+        payload: List[Dict[str, Any]] = []
+        seen = set()
+        for r in rows:
+            if not accepts_telemetry_source(r.source):
+                continue
+            pid = r.point_id
+            if pid in seen:
+                continue
+            seen.add(pid)
+            payload.append(as_contract(r))
+            if len(payload) >= limit:
+                break
         cache_set(key, payload, _LATEST_TTL)
         return payload
     finally:

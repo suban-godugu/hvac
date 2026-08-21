@@ -1,6 +1,7 @@
 """Persist O11/O13/O15/O16 telemetry, executions, optimization results, and audit.
 
-Live GET endpoints only return quality=GOOD rows and never source=SIMULATION.
+Readable rows are quality=GOOD. Simulation is allowed on Dataset demo reads.
+Production live KPIs never treat SIMULATION as LIVE_BMS.
 """
 from __future__ import annotations
 
@@ -37,9 +38,28 @@ def _now() -> datetime:
 
 
 def _is_live_row(quality: Optional[str], source: Optional[str]) -> bool:
+    """Production LIVE only. Simulation is never live."""
     if (source or "").upper() == SIM_SOURCE:
         return False
     return (quality or "").upper() == LIVE_QUALITY
+
+
+def _is_readable_row(quality: Optional[str], source: Optional[str]) -> bool:
+    """Dataset demo may read GOOD simulation. ML/training sources stay out of plant KPIs."""
+    q = (quality or "").upper()
+    src = (source or "").upper()
+    if q != LIVE_QUALITY:
+        return False
+    if src in ("ML_MODEL", "TRAINING_DATA", "TRAINING_DATASET", "MODEL PREDICTION", "KAGGLE"):
+        return False
+    if src == SIM_SOURCE:
+        try:
+            from backend.bms.connection_manager import is_simulation_mode
+
+            return is_simulation_mode()
+        except Exception:
+            return False
+    return True
 
 
 def ensure_catalog(db=None) -> None:
@@ -173,7 +193,7 @@ def persist_ventilation_points(opportunity_id: str, equipment_id: str, points: L
                     unit=p.get("unit", ""),
                     quality=p.get("quality", LIVE_QUALITY),
                     source=p.get("source", "BACnet_IP"),
-                    is_valid=_is_live_row(p.get("quality", LIVE_QUALITY), p.get("source")),
+                    is_valid=_is_readable_row(p.get("quality", LIVE_QUALITY), p.get("source")),
                     opportunity_id=opportunity_id,
                 )
             )
@@ -293,7 +313,7 @@ def _latest_vent_points(db, opportunity_id: str) -> Dict[str, Any]:
     )
     latest: Dict[str, Any] = {}
     for row in q:
-        if not _is_live_row(row.quality, row.source):
+        if not _is_readable_row(row.quality, row.source):
             continue
         if row.sensor_type in latest:
             continue
@@ -311,7 +331,7 @@ def _latest_vs_points(db, opportunity_id: str) -> Dict[str, Any]:
     )
     latest: Dict[str, Any] = {}
     for row in q:
-        if not _is_live_row(row.quality, row.source):
+        if not _is_readable_row(row.quality, row.source):
             continue
         key = row.point_name
         if key in latest:
@@ -346,7 +366,9 @@ def get_o11_state() -> Dict[str, Any]:
     try:
         points = _latest_vent_points(db, "O11")
         opt = _latest_opt(db, "O11")
-        live = bool(points) or bool(opt)
+        from backend.services.hvac_safety_contract import production_bms_connected
+
+        live = bool(production_bms_connected() and (points or opt))
         return {
             "opportunity_id": "O11",
             "live": live,
@@ -373,27 +395,29 @@ def get_o13_state() -> Dict[str, Any]:
             .limit(20)
             .all()
         )
-        co_live = next((r for r in co if _is_live_row(r.quality, r.source)), None)
+        co_row = next((r for r in co if _is_readable_row(r.quality, r.source)), None)
+        from backend.services.hvac_safety_contract import production_bms_connected
+
         return {
             "opportunity_id": "O13",
-            "live": bool(points) or bool(opt) or co_live is not None,
+            "live": bool(production_bms_connected() and (points or opt or co_row)),
             "telemetry": points,
             "optimization": opt,
             "co": None
-            if co_live is None
+            if co_row is None
             else {
-                "zone_id": co_live.zone_id,
-                "co_ppm": co_live.co_ppm,
-                "co_trend": co_live.co_trend,
-                "fan_state": co_live.fan_state,
-                "fan_speed": co_live.fan_speed,
-                "damper_pct": co_live.damper_pct,
-                "airflow_cfm": co_live.airflow_cfm,
-                "timestamp": co_live.timestamp.isoformat() if co_live.timestamp else None,
-                "quality": co_live.quality,
-                "source": co_live.source,
+                "zone_id": co_row.zone_id,
+                "co_ppm": co_row.co_ppm,
+                "co_trend": co_row.co_trend,
+                "fan_state": co_row.fan_state,
+                "fan_speed": co_row.fan_speed,
+                "damper_pct": co_row.damper_pct,
+                "airflow_cfm": co_row.airflow_cfm,
+                "timestamp": co_row.timestamp.isoformat() if co_row.timestamp else None,
+                "quality": co_row.quality,
+                "source": co_row.source,
             },
-            "current_value": (co_live.co_ppm if co_live else None) or (opt["current_value"] if opt else None),
+            "current_value": (co_row.co_ppm if co_row else None) or (opt["current_value"] if opt else None),
             "optimized_value": opt["optimized_value"] if opt else None,
             "energy_impact": opt["energy_impact"] if opt else None,
             "confidence": opt["confidence"] if opt else None,
@@ -408,9 +432,11 @@ def get_vs_state(opportunity_id: str) -> Dict[str, Any]:
     try:
         points = _latest_vs_points(db, opportunity_id)
         opt = _latest_opt(db, opportunity_id)
+        from backend.services.hvac_safety_contract import production_bms_connected
+
         return {
             "opportunity_id": opportunity_id,
-            "live": bool(points) or bool(opt),
+            "live": bool(production_bms_connected() and (points or opt)),
             "telemetry": points,
             "optimization": opt,
             "current_value": opt["current_value"] if opt else None,
@@ -424,7 +450,7 @@ def get_vs_state(opportunity_id: str) -> Dict[str, Any]:
 
 
 def dispatch_official(opportunity_id: str, target_value: float, equipment_id: str, target_point: str, actor: str = "SUPERVISORY_AI") -> Dict[str, Any]:
-    from backend.services.hvac_safety_contract import evaluate_dispatch
+    from backend.services.hvac_safety_contract import evaluate_dispatch, production_bms_connected
 
     ok, reason, classified = evaluate_dispatch({
         "id": opportunity_id,

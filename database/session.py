@@ -40,6 +40,14 @@ def _run_alembic() -> None:
 
 def init_db():
     from database.models import Base
+    try:
+        import database.models_o1  # noqa: F401
+    except Exception:
+        pass
+    try:
+        import database.models_ml  # noqa: F401
+    except Exception:
+        pass
 
     _run_alembic()
     if _allow_create_all():

@@ -7,7 +7,7 @@ export interface FacilityConfig {
 }
 
 export const DEFAULT_FACILITY_CONFIG: FacilityConfig = {
-  name: 'Skyline Corporate Center',
+  name: 'Senatria Corporation',
   location: 'Bengaluru, Karnataka, India',
   timezone: 'Asia/Kolkata',
   areaSqFt: 75000,

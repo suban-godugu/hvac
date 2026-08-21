@@ -22,7 +22,7 @@ export const OptimizationTimeline: React.FC = () => {
           <Clock className="w-4 h-4 text-sky-400" />
           <h3 className="text-sm font-bold text-slate-100">24-Hour Autonomous Supervisory Optimization Timeline</h3>
         </div>
-        <span className="text-xs font-mono text-slate-400">Skyline Corporate Center Schedule</span>
+        <span className="text-xs font-mono text-slate-400">Senatria Corporation Schedule</span>
       </div>
 
       <div className="space-y-2">

@@ -135,6 +135,15 @@ class BMSGateway(ABC):
     def write_point(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
         pass
 
+    def execute_write(self, point_id: str, value: float, priority: int = 10) -> WriteOutcome:
+        """Native write after command_writer has already passed evaluate_dispatch gates."""
+        del point_id, value, priority
+        return WriteOutcome(
+            success=False,
+            code=ADAPTER_UNAVAILABLE,
+            message="This BMS adapter cannot execute writes.",
+        )
+
     @abstractmethod
     def write_points(self, writes: List[Dict[str, Any]]) -> List[WriteOutcome]:
         pass

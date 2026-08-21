@@ -76,6 +76,41 @@ def ingest_from_sim(sim_state: Dict[str, Any], source: str = "SIMULATED") -> Non
     ingest_samples([s for s in samples if s["value"] is not None], source=source)
 
 
+def ingest_from_dataset_catalog(source: str = "SIMULATION") -> int:
+    """Map Phase-1 Dataset canonical points into O1 signal names. Never stamps LIVE_BMS."""
+    from backend.services.agent_telemetry_service import get_point
+
+    def _val(eq: str, canon: str) -> Optional[float]:
+        row = get_point(eq, canon)
+        if not row or row.get("value") is None:
+            return None
+        try:
+            return float(row["value"])
+        except (TypeError, ValueError):
+            return None
+
+    zone = _val("ZONE-01", "zone_temperature")
+    oat = _val("SITE", "outdoor_air_temperature")
+    occ = _val("ZONE-01", "occupancy")
+    enable = _val("AHU-01", "enable")
+    samples = [
+        {"signal": "ZONE_TEMP", "value": zone, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "OAT", "value": oat, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "OA_RH", "value": 55.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "SOLAR", "value": 420.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "OCCUPANCY", "value": occ if occ is not None else 0.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "AHU_STATUS", "value": enable if enable is not None else 1.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "EQUIP_AVAIL", "value": 1.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "ALARM", "value": 0.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+        {"signal": "FAN_STATUS", "value": enable if enable is not None else 0.0, "quality": "GOOD", "source": source, "timestamp": datetime.utcnow()},
+    ]
+    kept = [s for s in samples if s["value"] is not None]
+    if not kept:
+        return 0
+    ingest_samples(kept, source=source)
+    return len(kept)
+
+
 def evaluate_guardrails(run_id: str, ctx: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], bool]:
     checks = []
     def add(cid, name, ok, value, limit, unit, reason, severity="INFO"):

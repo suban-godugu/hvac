@@ -72,49 +72,77 @@ export function fleetCardFor(
   }
 
   const plant = sources.plant;
-  if (id === 'O5' && plant?.o5_summary) {
-    const s = plant.o5_summary;
+  const plantOpp = (code: string) =>
+    (plant as { opportunities?: { code?: string; current?: string; optimized?: string; status?: string; shed_kw?: number }[] } | null)?.opportunities?.find(
+      (o) => String(o.code || '').toUpperCase().startsWith(code)
+    );
+
+  if (id === 'O5' && (plant?.o5_summary || plantOpp('O5'))) {
+    const s = plant?.o5_summary || {
+      current: plantOpp('O5')?.current,
+      optimized: plantOpp('O5')?.optimized,
+      status: plantOpp('O5')?.status,
+      power_shed_kw: plantOpp('O5')?.shed_kw,
+    };
     return pack([field('Using', s.current), field('Optimized', s.optimized)], {
       status: s.status,
       impactLabel: 'Save',
       impactValue: s.power_shed_kw != null ? formatKw(s.power_shed_kw, true) : null,
     });
   }
-  if (id === 'O6' && plant?.o6_summary) {
-    const s = plant.o6_summary;
+  if (id === 'O6' && (plant?.o6_summary || plantOpp('O6'))) {
+    const s = plant?.o6_summary || {
+      current: plantOpp('O6')?.current,
+      optimized: plantOpp('O6')?.optimized,
+      status: plantOpp('O6')?.status,
+      power_shed_kw: plantOpp('O6')?.shed_kw,
+    };
     return pack([field('Using', s.current), field('Optimized', s.optimized)], {
       status: s.status,
       impactLabel: 'Save',
       impactValue: s.power_shed_kw != null ? formatKw(s.power_shed_kw, true) : null,
     });
   }
-  if (id === 'O7' && plant?.o7_summary) {
-    const s = plant.o7_summary;
+  if (id === 'O7' && (plant?.o7_summary || plantOpp('O7'))) {
+    const s = plant?.o7_summary || {
+      current: plantOpp('O7')?.current,
+      optimized: plantOpp('O7')?.optimized,
+      status: plantOpp('O7')?.status,
+      power_shed_kw: plantOpp('O7')?.shed_kw,
+    };
     return pack([field('Using', s.current), field('Optimized', s.optimized)], {
       status: s.status,
       impactLabel: 'Save',
       impactValue: s.power_shed_kw != null ? formatKw(s.power_shed_kw, true) : null,
     });
   }
-  if (id === 'O8' && plant?.o8_summary) {
-    const s = plant.o8_summary;
+  if (id === 'O8' && (plant?.o8_summary || plantOpp('O8'))) {
+    const s = plant?.o8_summary || {
+      current: plantOpp('O8')?.current,
+      optimized: plantOpp('O8')?.optimized,
+      status: plantOpp('O8')?.status,
+      power_shed_kw: plantOpp('O8')?.shed_kw,
+    };
     return pack([field('Using', s.current), field('Optimized', s.optimized)], {
       status: s.status,
       impactLabel: 'Save',
       impactValue: s.power_shed_kw != null ? formatKw(s.power_shed_kw, true) : null,
     });
   }
-  if (id === 'O9' && plant?.o9_summary) {
-    const s = plant.o9_summary;
+  if (id === 'O9' && (plant?.o9_summary || plantOpp('O9'))) {
+    const s = plant?.o9_summary;
+    const opp = plantOpp('O9');
     return pack(
       [
-        field('Payback', s.payback_years != null ? `${s.payback_years} yr` : null),
-        field('ROI', s.roi_pct != null ? `${s.roi_pct}%` : null),
+        field('Payback', s?.payback_years != null ? `${s.payback_years} yr` : null),
+        field('ROI', s?.roi_pct != null ? `${s.roi_pct}%` : null),
+        field('Using', !s ? opp?.current : null),
+        field('Recommended', !s ? opp?.optimized : null),
       ],
       {
-        status: s.status,
+        status: s?.status || opp?.status,
         impactLabel: 'Save',
-        impactValue: s.annual_savings_usd != null ? `$${s.annual_savings_usd}` : null,
+        impactValue: s?.annual_savings_usd != null ? `$${s.annual_savings_usd}` : null,
       }
     );
   }

@@ -46,7 +46,13 @@ def _mode() -> str:
 
 
 def is_simulation_mode() -> bool:
-    return _mode() in ("simulation", "simulator", "sim")
+    """DATASET plant is simulation. LIVE_BMS never treats the simulator as production."""
+    try:
+        from backend.services.platform_ops_service import PLANT_DATASET, get_plant_mode
+
+        return get_plant_mode() == PLANT_DATASET
+    except Exception:
+        return _mode() in ("simulation", "simulator", "sim")
 
 
 def make_adapter(protocol: str) -> BMSGateway:
@@ -192,20 +198,21 @@ class ConnectionManager:
                 return
             row.connected = connected
             row.last_error = error
-            row.write_enabled = False
             row.updated_at = _now()
             if connected:
                 row.last_connected_at = _now()
+            else:
+                row.write_enabled = False
             db.commit()
         finally:
             db.close()
 
     def connect(self, protocol: str, host: str, port: int, building_id: Optional[str] = None, test_only: bool = False) -> Dict[str, Any]:
-        if is_simulation_mode() and not test_only and protocol.strip().lower() not in _FACTORY_OVERRIDES:
+        if is_simulation_mode() and not test_only:
             return {
                 "status": "DISCONNECTED",
                 "code": "SIMULATION_MODE",
-                "message": "HVAC_BMS_MODE=simulation does not open a production BMS.",
+                "message": "Dataset mode is selected. Switch the header to Live BMS before connecting a production gateway.",
                 "connected": False,
             }
         cfg = self.upsert_config(protocol=protocol, host=host, port=int(port), building_id=building_id)
@@ -255,6 +262,13 @@ class ConnectionManager:
             return {"status": "DISCONNECTED", "connected": False, "code": health.code, "message": health.message}
         self._adapter = adapter
         self._set_state(connected=True, error=None, connection_id=cfg["id"])
+        try:
+            from backend.bms.telemetry_reader import poll_once, start_reader
+
+            start_reader()
+            poll_once(include_unmapped=False)
+        except Exception:
+            pass
         return {
             "status": "CONNECTED",
             "connected": True,
@@ -263,6 +277,23 @@ class ConnectionManager:
             "port": int(port),
             "last_connected_at": health.last_connected_at,
         }
+
+    def set_write_enabled(self, enabled: bool, building_id: Optional[str] = None) -> None:
+        from database.models_bms import BmsConnectionDB
+
+        row = self.current_row(building_id)
+        if row is None:
+            return
+        db = self._session()
+        try:
+            rec = db.query(BmsConnectionDB).filter(BmsConnectionDB.id == row.id).first()
+            if rec is None:
+                return
+            rec.write_enabled = bool(enabled)
+            rec.updated_at = _now()
+            db.commit()
+        finally:
+            db.close()
 
     def disconnect(self, building_id: Optional[str] = None) -> Dict[str, Any]:
         if self._adapter:

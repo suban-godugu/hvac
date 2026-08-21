@@ -182,18 +182,18 @@ class ProductionBMSGateway(BMSGatewayBase):
         return {"timestamp": datetime.utcnow().isoformat(), "connected": h.connected, "protocol": h.protocol, "points": {}}
 
     def write_point(self, point_id: str, value: float, priority: int = 10) -> BMSWriteResult:
-        from backend.bms.command_writer import write_point as reject_write
+        from backend.bms.command_writer import write_point as gated
 
-        blocked = reject_write(point_id, value, priority)
+        out = gated(point_id, value, priority)
         tx_id = f"tx-{uuid.uuid4().hex[:8]}"
         return BMSWriteResult(
             point_id=point_id,
-            success=False,
+            success=bool(out.success),
             written_value=value,
             priority=priority,
             transaction_id=tx_id,
             timestamp=datetime.utcnow().isoformat(),
-            error_message=blocked.code,
+            error_message=None if out.success else out.code,
         )
 
     def write_batch(self, writes: List[BMSWriteCommand]) -> List[BMSWriteResult]:
@@ -227,9 +227,10 @@ def get_bms_gateway() -> BMSGatewayBase:
     global _GATEWAY
     if _GATEWAY is not None:
         return _GATEWAY
-    mode = (os.getenv("HVAC_BMS_MODE", "simulation") or "simulation").lower()
+    from backend.bms.connection_manager import is_simulation_mode
+
     protocol = (os.getenv("HVAC_BMS_PROTOCOL") or "bacnet").lower()
-    if mode in ("simulation", "simulator", "sim"):
+    if is_simulation_mode():
         gw = SimulatorBMSGateway()
         gw.connected = False
         _GATEWAY = gw

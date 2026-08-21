@@ -14,7 +14,14 @@ from backend.agents.runtime.audit import audit_command
 from backend.agents.scheduling_supervisory.gateway import get_bms_gateway
 from backend.services.canonical_telemetry_service import find_point_by_suffix, latest_points, record_point
 from backend.services.ttl_cache import cache_get, cache_set
-from backend.services.hvac_safety_contract import evaluate_dispatch, is_safe_mode, production_bms_connected, classify_ui_state
+from backend.services.hvac_safety_contract import (
+    classify_ui_state,
+    evaluate_dispatch,
+    ingest_quality,
+    is_safe_mode,
+    normalize_telemetry_source,
+    production_bms_connected,
+)
 from backend.services.logging_service import log_event
 from backend.services.opportunity_persist_service import audit, persist_execution, persist_optimization
 from backend.services.platform_ops_service import get_safe_mode, set_safe_mode
@@ -32,22 +39,22 @@ from database.models_platform import AgentRunDB
 from database.session import SessionLocal
 
 POINT_ALIASES = {
-    "CEWT": ("CW.SupplyTemp", "O16.CEWT", "WCC.CEWT"),
-    "CLWT": ("CW.ReturnTemp", "O16.CLWT", "WCC.CLWT"),
-    "HEAD_PRESSURE": ("CW.HeadPressure", "O16.HEAD_PRESSURE", "WCC.HeadPressure"),
+    "CEWT": ("CW.SupplyTemp", "O16.CEWT", "WCC.CEWT", "CW-01.cw_supply_temperature", "CH-01.condenser_water_temperature"),
+    "CLWT": ("CW.ReturnTemp", "O16.CLWT", "WCC.CLWT", "CW-01.cw_return_temperature"),
+    "HEAD_PRESSURE": ("CW.HeadPressure", "O16.HEAD_PRESSURE", "WCC.HeadPressure", "CH-01.head_pressure"),
     "HP_SETPOINT": ("CW.HeadPressureSetpoint", "O16.HP_SETPOINT"),
-    "COND_TEMP": ("CW.CondTemp", "O16.COND_TEMP"),
-    "CW_FLOW": ("CW.Flow", "O16.CW_FLOW"),
-    "PUMP_SPEED": ("CW.PumpSpeed", "O16.PUMP_SPEED"),
-    "PUMP_STATE": ("CW.PumpState", "O16.PUMP_STATE"),
+    "COND_TEMP": ("CW.CondTemp", "O16.COND_TEMP", "CH-01.condenser_water_temperature"),
+    "CW_FLOW": ("CW.Flow", "O16.CW_FLOW", "P-01.flow"),
+    "PUMP_SPEED": ("CW.PumpSpeed", "O16.PUMP_SPEED", "P-01.speed"),
+    "PUMP_STATE": ("CW.PumpState", "O16.PUMP_STATE", "P-01.status"),
     "PUMP_POWER_KW": ("CW.PumpPower", "O16.PUMP_POWER_KW"),
     "VALVE_POSITION": ("CW.ValvePosition", "O16.VALVE_POSITION"),
-    "LOAD": ("CW.Load", "O16.LOAD"),
-    "COMPRESSOR_STATE": ("CW.CompressorState", "O16.COMPRESSOR_STATE"),
+    "LOAD": ("CW.Load", "O16.LOAD", "CH-01.load"),
+    "COMPRESSOR_STATE": ("CW.CompressorState", "O16.COMPRESSOR_STATE", "CH-01.status"),
     "COOLING_CALL": ("CW.CoolingCall", "O16.COOLING_CALL"),
-    "OAT": ("CW.OAT", "O16.OAT"),
+    "OAT": ("CW.OAT", "O16.OAT", "SITE.outdoor_air_temperature"),
     "OAWB": ("CW.WetBulb", "O16.OAWB"),
-    "ALARM": ("CW.Alarm", "O16.ALARM"),
+    "ALARM": ("CW.Alarm", "O16.ALARM", "CH-01.alarms"),
     "ACTIVE_CONDENSERS": ("CW.ActiveCondensers", "O16.ACTIVE_CONDENSERS"),
 }
 
@@ -490,7 +497,7 @@ def history(hours: int = 24, building_id: Optional[str] = None) -> Dict[str, Any
                 "source": r.source,
             }
             for r in rows
-            if (r.source or "").upper() not in ("SIMULATION", "DEMO")
+            if (r.source or "").upper() not in ("ML_MODEL", "KAGGLE", "TRAINING_DATA")
         ]
         return {"period_hours": hours, "points": points, "fabricated": False}
     finally:
@@ -517,12 +524,14 @@ def ingest_points(points: List[Dict[str, Any]], building_id: Optional[str] = Non
     db = SessionLocal()
     try:
         for p in points:
+            src = normalize_telemetry_source(p.get("source"))
+            q = ingest_quality(p.get("value"), p.get("quality"))
             record_point(
                 point_id=p["point_id"],
                 value=p.get("value"),
                 unit=p.get("unit"),
-                source=p.get("source") or "LIVE_BMS",
-                quality=p.get("quality") or "GOOD",
+                source=src,
+                quality=q,
                 building_id=bid,
                 equipment_id=p.get("equipment_id"),
             )
@@ -534,8 +543,8 @@ def ingest_points(points: List[Dict[str, Any]], building_id: Optional[str] = Non
                     timestamp=_now(),
                     value=p.get("value"),
                     unit=p.get("unit"),
-                    quality=p.get("quality") or "GOOD",
-                    source=p.get("source") or "LIVE_BMS",
+                    quality=q,
+                    source=src,
                     created_at=_now(),
                 )
             )

@@ -186,11 +186,11 @@ def build_recommendation(
         "energy_impact": None,
         "ml": _ml_advisory(oid),
         "dispatch": {
-            "allowed": False,
+            "allowed": bool(ok) and spec.get("kind") not in ("ADVISORY", "MAINTENANCE", "REVIEW"),
             "reason": reason,
             "code": classified.get("code"),
         },
-        "control": "WRITE_DISABLED",
+        "control": ctx.get("control") or "WRITE_DISABLED",
         "writes_attempted": writes_attempted,
         "recommendation_status": "AVAILABLE" if rec_available else "UNAVAILABLE",
         "kind": spec.get("kind"),

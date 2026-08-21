@@ -6,7 +6,7 @@ test.describe('HVAC Scheduling & Supervisory Agent Live UI', () => {
 
     // Verify Title & Identity
     await expect(page.locator('h1')).toContainText('Scheduling & Supervisory Agent');
-    await expect(page.locator('body')).toContainText('Skyline Corporate Center');
+    await expect(page.locator('body')).toContainText('Senatria Corporation');
 
     // Verify Opportunity Studio Cards
     await expect(page.locator('body')).toContainText('Optimum Start/Stop Programming');

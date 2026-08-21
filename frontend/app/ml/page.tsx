@@ -7,7 +7,14 @@ import { apiJson } from '@/lib/api/client';
 import { StatusBadge } from '@/components/hvac/StatusBadge';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-type Filter = 'all' | 'MODEL_READY' | 'MODEL_NOT_TRAINABLE' | 'TRAINING' | 'TRAINING_FAILED' | 'DATASET_INVALID';
+type Filter =
+  | 'all'
+  | 'MODEL_READY'
+  | 'MODEL_NOT_AVAILABLE'
+  | 'MODEL_NOT_TRAINABLE'
+  | 'TRAINING'
+  | 'TRAINING_FAILED'
+  | 'DATASET_INVALID';
 
 interface HealthRow {
   opportunity_id: string;
@@ -47,6 +54,7 @@ export default function MlRegistryPage() {
     queryKey: ['ml-health'],
     queryFn: () => apiJson('/ml/health') as Promise<{ opportunities: HealthRow[]; source: string; datasets: unknown[] }>,
     staleTime: 15_000,
+    retry: 2,
   });
 
   const rows = useMemo(() => q.data?.opportunities || [], [q.data]);
@@ -60,6 +68,7 @@ export default function MlRegistryPage() {
   const filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'MODEL_READY', label: 'Model Ready' },
+    { id: 'MODEL_NOT_AVAILABLE', label: 'Not Available' },
     { id: 'MODEL_NOT_TRAINABLE', label: 'Not Trainable' },
     { id: 'TRAINING', label: 'Training' },
     { id: 'TRAINING_FAILED', label: 'Failed' },
@@ -71,8 +80,8 @@ export default function MlRegistryPage() {
       <PageHeader
         icon={Brain}
         title="HVAC ML Registry & Model Health"
-        subtitle="Training/reference models for O1–O20. Never LIVE BMS."
-        badge="TRAINING DATA"
+        subtitle="Training/reference models for O1–O20. Provenance is MODEL PREDICTION only — never LIVE BMS."
+        badge="MODEL PREDICTION"
       />
 
       <div className="flex flex-wrap gap-2">
@@ -102,9 +111,12 @@ export default function MlRegistryPage() {
           </ul>
         </section>
       ) : null}
-      {q.isError ? (
+      {q.isError && rows.length === 0 ? (
         <div className="kpi-tile" role="alert">
-          DATA SOURCE ERROR — ML registry unavailable.
+          DATA SOURCE ERROR — ML registry unavailable.{' '}
+          <button type="button" className="text-cyan-300 underline" onClick={() => q.refetch()}>
+            Retry
+          </button>
         </div>
       ) : null}
 
@@ -169,7 +181,13 @@ export default function MlRegistryPage() {
             ))}
           </tbody>
         </table>
-        {!q.isLoading && filtered.length === 0 ? <div className="p-4 text-slate-500">NO DATA</div> : null}
+        {!q.isLoading && filtered.length === 0 ? (
+          <div className="p-4 text-slate-500">
+            {rows.length === 0
+              ? 'NO DATA'
+              : `No opportunities in this filter (${rows.length} in registry). Switch to All.`}
+          </div>
+        ) : null}
       </div>
 
       {detail ? (

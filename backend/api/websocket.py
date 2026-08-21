@@ -50,7 +50,8 @@ async def telemetry_websocket(websocket: WebSocket):
                     "bms": bms,
                     "telemetry": snap.get("telemetry"),
                     "safeMode": snap.get("safeMode"),
-                    "controlEnabled": False,
+                    "controlEnabled": bool(snap.get("controlEnabled")),
+                    "plantMode": snap.get("plantMode"),
                     "events": events,
                     "count": len(events),
                 }

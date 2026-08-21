@@ -1,4 +1,12 @@
-"""Shared O1–O20 safety / dispatch contract. No BMS write unless this gate passes."""
+"""Shared O1–O20 safety / dispatch contract. No BMS write unless this gate passes.
+
+Phase 0 — frozen rules:
+- Simulation is never labeled LIVE_BMS.
+- Missing sensor → None / MISSING / NO DATA, never coerced to 0.
+- Physical writes stay off until HVAC_BMS_WRITE_ENABLED=1, mapping exists, and write-enable after safety review.
+- Dataset mode and SAFE MODE never write.
+- Production BMS never falls back to the simulator.
+"""
 from __future__ import annotations
 
 import os
@@ -42,6 +50,59 @@ def _upper(v: Any) -> str:
 
 def is_demo_source(src: Any) -> bool:
     return _upper(src) in DEMO_SOURCES or "SIMUL" in _upper(src) or _upper(src).startswith("DEMO")
+
+
+def default_ingest_source() -> str:
+    """Omitted source: SIMULATION in sim mode; LIVE_BMS only after a production handshake."""
+    from backend.bms.connection_manager import is_simulation_mode
+
+    if is_simulation_mode():
+        return "SIMULATION"
+    if production_bms_connected():
+        return "LIVE_BMS"
+    return "UNKNOWN"
+
+
+def normalize_telemetry_source(source: Any) -> str:
+    """Never persist LIVE_BMS for simulation/demo. Never upgrade simulation to live."""
+    from backend.bms.connection_manager import is_simulation_mode
+
+    provided = source is not None and str(source).strip() != ""
+    raw = str(source).strip() if provided else default_ingest_source()
+    up = _upper(raw)
+    if is_simulation_mode() or is_demo_source(raw):
+        if up in LIVE_SOURCES:
+            return "SIMULATION"
+        if not provided:
+            return "SIMULATION"
+        if "SIMUL" in up:
+            return "SIMULATION"
+        if up.startswith("DEMO") or up in ("TEST", "TEST TELEMETRY"):
+            return "DEMO"
+        return raw
+    return raw
+
+
+def ingest_quality(value: Any, quality: Any = None) -> str:
+    """Missing value is MISSING, not GOOD with a zero."""
+    q = _upper(quality)
+    if _num(value) is None:
+        if q in ("BAD", "STALE", "MISSING"):
+            return q
+        return "MISSING"
+    return q or "GOOD"
+
+
+def accepts_telemetry_source(source: Any) -> bool:
+    """Live BMS never consumes Dataset/simulation rows."""
+    if is_demo_source(source):
+        try:
+            from backend.bms.connection_manager import is_simulation_mode
+
+            return is_simulation_mode()
+        except Exception:
+            return False
+    return True
 
 
 def is_safe_mode() -> bool:
@@ -135,6 +196,7 @@ def evaluate_dispatch(context: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any
     approved = context.get("approval_status")
     oid = context.get("opportunity_id") or context.get("id")
 
+    action = _upper(context.get("action") or "APPLY")
     if is_safe_mode():
         return False, "SAFE_MODE blocks all automatic BMS writes.", {**classified, "code": "SAFE_MODE"}
     if oid in ("O18",):
@@ -143,14 +205,32 @@ def evaluate_dispatch(context: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any
         return False, "O19 records maintenance actions only; no HVAC control writes.", {**classified, "code": "MAINTENANCE_ONLY"}
     if oid in ("O20",):
         return False, "O20 requires change-request review; no automatic software deploy.", {**classified, "code": "REVIEW_REQUIRED"}
+    from backend.bms.command_writer import physical_writes_allowed, simulated_writes_allowed, write_enabled_flag
+
     if classified["demo"] or is_demo_source(src):
         code = "ML_SOURCE_BLOCKED" if _upper(src) in ("ML_MODEL", "TRAINING_DATA", "TRAINING_DATASET", "MODEL PREDICTION", "KAGGLE") else "SIMULATION_BLOCKED"
-        reason = (
-            "ML/training sources cannot dispatch to BMS."
-            if code == "ML_SOURCE_BLOCKED"
-            else "Demo/simulation telemetry cannot dispatch to BMS."
-        )
-        return False, reason, {**classified, "code": code}
+        if code == "ML_SOURCE_BLOCKED" or not simulated_writes_allowed():
+            reason = (
+                "ML/training sources cannot dispatch to BMS."
+                if code == "ML_SOURCE_BLOCKED"
+                else "Demo/simulation telemetry cannot dispatch to BMS."
+            )
+            return False, reason, {**classified, "code": code}
+        if classified["status"] in ("MISSING", "BAD"):
+            return False, "Telemetry is missing or bad.", {**classified, "code": "WAIT_FOR_TELEMETRY" if classified["status"] == "MISSING" else "BAD_TELEMETRY"}
+        if classified["status"] == "STALE":
+            return False, "Stale telemetry requires SAFE_HOLD.", {**classified, "code": "STALE"}
+        if action == "VERIFY":
+            return True, "OK (simulator)", {**classified, "code": "SIM_DISPATCH_OK"}
+        if action != "ROLLBACK" and decision != "OPTIMIZE":
+            return False, "Supervisory decision is not OPTIMIZE.", {**classified, "code": "DECISION"}
+        if safety_status != "PASS" or safety.get("passed") is False:
+            return False, "Safety guardrails did not pass.", {**classified, "code": "SAFETY"}
+        if action != "ROLLBACK" and (conf is None or conf < CONFIDENCE_MIN):
+            return False, "Confidence is below the dispatch threshold.", {**classified, "code": "CONFIDENCE"}
+        if action != "ROLLBACK" and (_num(current) is None or _num(target) is None):
+            return False, "Required current/target engineering values are missing.", {**classified, "code": "MISSING_VALUES"}
+        return True, "OK (simulator only)", {**classified, "code": "SIM_DISPATCH_OK"}
     if classified["status"] == "STALE":
         return False, "Stale telemetry requires SAFE_HOLD.", {**classified, "code": "STALE"}
     if classified["status"] == "BMS_OFFLINE":
@@ -161,23 +241,25 @@ def evaluate_dispatch(context: Dict[str, Any]) -> Tuple[bool, str, Dict[str, Any
         return False, "Telemetry is not LIVE BMS.", {**classified, "code": "NOT_LIVE"}
     if not production_bms_connected():
         return False, "Production BMS gateway is not connected.", {**classified, "code": "BMS_OFFLINE"}
-    if decision != "OPTIMIZE":
+    if action == "VERIFY":
+        return True, "OK", {**classified, "code": "DISPATCH_OK"}
+    if action != "ROLLBACK" and decision != "OPTIMIZE":
         return False, "Supervisory decision is not OPTIMIZE.", {**classified, "code": "DECISION"}
     if safety_status != "PASS" or safety.get("passed") is False:
         return False, "Safety guardrails did not pass.", {**classified, "code": "SAFETY"}
-    if conf is None or conf < CONFIDENCE_MIN:
+    if action != "ROLLBACK" and (conf is None or conf < CONFIDENCE_MIN):
         return False, "Confidence is below the dispatch threshold.", {**classified, "code": "CONFIDENCE"}
-    if _num(current) is None or _num(target) is None:
+    if action != "ROLLBACK" and (_num(current) is None or _num(target) is None):
         return False, "Required current/target engineering values are missing.", {**classified, "code": "MISSING_VALUES"}
     if role == "VIEWER":
         return False, "Viewer role cannot dispatch.", {**classified, "code": "UNAUTHORIZED"}
-    if approved not in (None, "APPROVED", "NOT_REQUIRED"):
+    if action != "ROLLBACK" and approved not in (None, "APPROVED", "NOT_REQUIRED"):
         if _upper(os.getenv("HVAC_REQUIRE_APPROVAL", "1")) in ("1", "TRUE") and approved != "APPROVED":
             return False, "Dispatch requires completed approval.", {**classified, "code": "APPROVAL_REQUIRED"}
     from backend.bms.command_writer import physical_writes_allowed, write_enabled_flag
 
     if not write_enabled_flag() or not physical_writes_allowed():
-        return False, "BMS writes are disabled during read-only commissioning.", {**classified, "code": "WRITE_DISABLED"}
+        return False, "Supervised writes are not enabled.", {**classified, "code": "WRITE_DISABLED"}
     return True, "OK", {**classified, "code": "DISPATCH_OK"}
 
 
@@ -199,10 +281,9 @@ def classify_ui_state(
     connected = production_bms_connected()
     if live and connected and st == "LIVE":
         return "LIVE"
-    # Simulator ingest often stamps LIVE_BMS while HVAC_BMS_CONNECTED=0.
-    # That is not missing telemetry — label SIMULATION so studios stay visible.
+    # Relabeled LIVE_BMS while the gateway is down is still not live — never show LIVE.
     if not connected and (live or st == "LIVE" or _upper(source) in LIVE_SOURCES):
-        return "SIMULATION"
+        return "SIMULATION" if is_demo_source(source) else "NO_DATA"
     return "NO_DATA"
 
 

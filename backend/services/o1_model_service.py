@@ -7,7 +7,10 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
 
 from database.session import SessionLocal
 from database.models_o1 import O1ModelDB, O1ModelTrainingRunDB
@@ -74,6 +77,8 @@ def predict_time_to_target(zone_temp: Optional[float], target_temp: float, oat: 
 
 def train_from_records(records: List[Dict[str, Any]], dataset_version: str = "o1-dev") -> Dict[str, Any]:
     """Fit linear model; persist metrics without flooring R²."""
+    if np is None:
+        return {"status": "MODEL_NOT_READY", "reason": "numpy is not installed"}
     if len(records) < 8:
         return {"status": "MODEL_NOT_READY", "reason": "Insufficient samples", "sample_count": len(records)}
     n = len(records)

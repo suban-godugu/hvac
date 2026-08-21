@@ -60,51 +60,121 @@ class PlantControlAgent:
         }
 
     def get_fleet_summary(self) -> Dict[str, Any]:
-        """Returns the high-level dashboard fleet status for UI cards and charts."""
+        """Fleet dashboard payload. Includes o5–o9_summary for Fleet Overview cards."""
         cycle = self.run_supervisory_cycle()
         o5 = cycle["opportunities"]["o5"]
+        o6 = cycle["opportunities"]["o6"]
+        o7 = cycle["opportunities"]["o7"]
+        o8 = cycle["opportunities"]["o8"]
         o6_8 = cycle["opportunities"]["o6_8"]
         o9 = cycle["opportunities"]["o9"]
 
+        def _sp(mode: Dict[str, Any]) -> tuple:
+            cur = mode.get("current_setpoint")
+            opt = mode.get("optimized_setpoint")
+            return (
+                f"{cur}°C" if cur is not None else "—",
+                f"{opt}°C" if opt is not None else "—",
+                float(mode.get("power_shed_kw") or 0.0),
+            )
+
+        o6_cur, o6_opt, o6_kw = _sp(o6)
+        o7_cur, o7_opt, o7_kw = _sp(o7)
+        o8_cur, o8_opt, o8_kw = _sp(o8)
+
+        from backend.bms.connection_manager import is_simulation_mode
+
+        sim = is_simulation_mode()
+        reset_status = "MONITORING" if sim else "ACTIVE_RESET"
+
+        o5_summary = {
+            "title": "Duct Static Pressure Reset",
+            "current": f"{o5.get('current_static_pressure')} in.w.c.",
+            "optimized": f"{o5.get('optimized_setpoint')} in.w.c.",
+            "power_shed_kw": o5.get("power_shed_kw"),
+            "status": reset_status,
+        }
+        o6_summary = {
+            "title": "Heating Hot Water Reset",
+            "current": o6_cur,
+            "optimized": o6_opt,
+            "power_shed_kw": o6_kw,
+            "status": reset_status,
+        }
+        o7_summary = {
+            "title": "Chilled Water Reset",
+            "current": o7_cur,
+            "optimized": o7_opt,
+            "power_shed_kw": o7_kw,
+            "status": reset_status,
+        }
+        o8_summary = {
+            "title": "Condenser Water Reset",
+            "current": o8_cur,
+            "optimized": o8_opt,
+            "power_shed_kw": o8_kw,
+            "status": reset_status,
+        }
+        o9_summary = {
+            "title": "Electronic Expansion Valve Retrofit",
+            "status": o9.get("recommendation") or "ASSESSMENT",
+            "annual_savings_usd": o9.get("total_annual_savings_usd"),
+            "payback_years": o9.get("payback_years"),
+            "roi_pct": o9.get("five_year_net_roi_pct"),
+        }
+
         return {
+            "agent_name": "Plant Control Parameter Optimizations",
             "agent_health": "OPTIMAL",
+            "agent_mode": self.mode,
             "mode": self.mode,
+            "bms_connection": "DISCONNECTED" if sim else "CONNECTED",
+            "telemetry_age_seconds": 0 if sim else None,
             "total_power_shed_kw": cycle["total_power_shed_kw"],
+            "daily_energy_saved_kwh": cycle["daily_kwh_savings"],
             "daily_kwh_savings": cycle["daily_kwh_savings"],
             "comfort_compliance_pct": 100.0,
+            "safety_compliance_pct": 100.0,
             "safety_status": "PASS",
+            "active_opportunities_count": cycle["active_opportunities_count"],
+            "applied_optimizations_count": 0 if sim else cycle["active_opportunities_count"],
+            "o5_summary": o5_summary,
+            "o6_summary": o6_summary,
+            "o7_summary": o7_summary,
+            "o8_summary": o8_summary,
+            "o9_summary": o9_summary,
             "opportunities": [
                 {
                     "code": "O5",
-                    "title": "Duct Static Pressure Reset",
+                    "title": o5_summary["title"],
                     "route": "/agents/plant-control/duct-static-pressure",
-                    "status": "ACTIVE_RESET",
-                    "current": f"{o5['current_static_pressure']} in.w.c.",
-                    "optimized": f"{o5['optimized_setpoint']} in.w.c.",
-                    "shed_kw": o5["power_shed_kw"],
-                    "confidence": o5["confidence"]
+                    "status": o5_summary["status"],
+                    "current": o5_summary["current"],
+                    "optimized": o5_summary["optimized"],
+                    "shed_kw": o5_summary["power_shed_kw"],
+                    "confidence": o5.get("confidence"),
                 },
                 {
                     "code": "O6–8",
                     "title": "Temperature Reset (HHW / CHW / CW)",
                     "route": "/agents/plant-control/temperature-reset",
-                    "status": "ACTIVE_RESET",
-                    "current": f"CHW {o6_8['modes']['CHW']['current_setpoint']}°C | CW {o6_8['modes']['CW']['current_setpoint']}°C | HHW {o6_8['modes']['HHW']['current_setpoint']}°C",
-                    "optimized": f"CHW {o6_8['modes']['CHW']['optimized_setpoint']}°C | CW {o6_8['modes']['CW']['optimized_setpoint']}°C | HHW {o6_8['modes']['HHW']['optimized_setpoint']}°C",
-                    "shed_kw": o6_8["total_power_shed_kw"],
-                    "confidence": o6_8["confidence"]
+                    "status": reset_status,
+                    "current": f"CHW {o7_cur} | CW {o8_cur} | HHW {o6_cur}",
+                    "optimized": f"CHW {o7_opt} | CW {o8_opt} | HHW {o6_opt}",
+                    "shed_kw": o6_8.get("total_power_shed_kw"),
+                    "confidence": o6_8.get("confidence"),
                 },
                 {
                     "code": "O9",
-                    "title": "Electronic Expansion Valve Retrofit",
+                    "title": o9_summary["title"],
                     "route": "/agents/plant-control/electronic-expansion-valve",
-                    "status": o9["recommendation"],
-                    "current": o9["current_technology"],
-                    "optimized": o9["proposed_technology"],
-                    "shed_kw": round((o9["annual_kwh_savings"] / 2800.0), 1),
-                    "confidence": o9["confidence"]
-                }
-            ]
+                    "status": o9_summary["status"],
+                    "current": o9.get("current_technology"),
+                    "optimized": o9.get("proposed_technology"),
+                    "shed_kw": round((float(o9.get("annual_kwh_savings") or 0) / 2800.0), 1),
+                    "confidence": o9.get("confidence"),
+                },
+            ],
         }
 
 plant_control_agent = PlantControlAgent()

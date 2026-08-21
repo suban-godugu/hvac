@@ -12,7 +12,14 @@ from backend.agents.runtime.verification import rollback_command, verify_command
 from backend.agents.runtime.audit import audit_command
 from backend.agents.scheduling_supervisory.gateway import get_bms_gateway
 from backend.services.canonical_telemetry_service import find_point_by_suffix, latest_points, record_point
-from backend.services.hvac_safety_contract import evaluate_dispatch, is_safe_mode, production_bms_connected, classify_ui_state
+from backend.services.hvac_safety_contract import (
+    classify_ui_state,
+    evaluate_dispatch,
+    ingest_quality,
+    is_safe_mode,
+    normalize_telemetry_source,
+    production_bms_connected,
+)
 from backend.services.opportunity_persist_service import audit, persist_execution, persist_optimization
 from backend.services.platform_ops_service import get_safe_mode, set_safe_mode
 from sqlalchemy import or_
@@ -22,17 +29,17 @@ from database.models_platform import AgentRunDB
 from database.session import SessionLocal
 
 POINT_ALIASES = {
-    "INDEX_DP": ("SCHW.IndexDP", "SCHW.DP", "O14.INDEX_DP"),
+    "INDEX_DP": ("SCHW.IndexDP", "SCHW.DP", "O14.INDEX_DP", "P-01.differential_pressure"),
     "DP_SETPOINT": ("SCHW.DPSetpoint", "O14.DP_SETPOINT"),
     "MOST_OPEN_VALVE_PCT": ("SCHW.MostOpenValve", "O14.MOST_OPEN_VALVE_PCT"),
     "VALVE_AVG_PCT": ("SCHW.ValveAvg", "O14.VALVE_AVG_PCT"),
-    "FLOW": ("SCHW.Flow", "O14.FLOW"),
-    "SPEED_PCT": ("SCHW.Speed", "O14.SPEED_PCT"),
+    "FLOW": ("SCHW.Flow", "O14.FLOW", "P-01.flow"),
+    "SPEED_PCT": ("SCHW.Speed", "O14.SPEED_PCT", "P-01.speed"),
     "POWER_KW": ("SCHW.Power", "O14.POWER_KW"),
-    "CHWST": ("SCHW.SupplyTemp", "O14.CHWST"),
-    "CHWRT": ("SCHW.ReturnTemp", "O14.CHWRT"),
-    "LOAD_PCT": ("SCHW.Load", "O14.LOAD_PCT"),
-    "COOLING_CALL": ("SCHW.CoolingCall", "O14.COOLING_CALL"),
+    "CHWST": ("SCHW.SupplyTemp", "O14.CHWST", "CH-01.chw_supply_temperature"),
+    "CHWRT": ("SCHW.ReturnTemp", "O14.CHWRT", "CH-01.chw_return_temperature"),
+    "LOAD_PCT": ("SCHW.Load", "O14.LOAD_PCT", "CH-01.load"),
+    "COOLING_CALL": ("SCHW.CoolingCall", "O14.COOLING_CALL", "P-01.status"),
     "PUMPS_RUNNING": ("SCHW.PumpsRunning", "O14.PUMPS_RUNNING"),
 }
 
@@ -414,7 +421,7 @@ def history(hours: int = 24, building_id: Optional[str] = None) -> Dict[str, Any
                 "source": r.source,
             }
             for r in rows
-            if (r.source or "").upper() not in ("SIMULATION", "DEMO")
+            if (r.source or "").upper() not in ("ML_MODEL", "KAGGLE", "TRAINING_DATA")
         ]
         return {"period_hours": hours, "points": points, "fabricated": False}
     finally:
@@ -441,8 +448,8 @@ def ingest_points(points: List[Dict[str, Any]], building_id: Optional[str] = Non
             point_id=p["point_id"],
             value=p.get("value"),
             unit=p.get("unit"),
-            source=p.get("source") or "LIVE_BMS",
-            quality=p.get("quality") or "GOOD",
+            source=normalize_telemetry_source(p.get("source")),
+            quality=ingest_quality(p.get("value"), p.get("quality")),
             building_id=bid,
             equipment_id=p.get("equipment_id"),
             timestamp=None,

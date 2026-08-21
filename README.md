@@ -15,6 +15,8 @@ Simulation and live BMS writes are strictly separated. Missing telemetry is show
 
 There is **no application login**. Opening `/` redirects to `/overview`. Production access is network and infrastructure, not JWT or sessions.
 
+**Demo:** API snapshot on Hugging Face ([subhan07/hvac-agents](https://huggingface.co/subhan07/hvac-agents)). A **Docker Space** needs Hugging Face PRO (`python scripts/sync_hf_space.py --space`). Until then the live API is [hvac-two-kappa.vercel.app](https://hvac-two-kappa.vercel.app) (simulation, writes off). UI: [frontend-omega-five-11.vercel.app](https://frontend-omega-five-11.vercel.app).
+
 ---
 
 ## Architecture
@@ -161,7 +163,32 @@ Set `HVAC_START_CONTROL_WORKER=0` on the API process if you run the control loop
 
 ---
 
-## Docker
+## Demo deploy (Phase 2)
+
+Hugging Face Docker Spaces require PRO. The API image is published as a model repo:
+
+```bash
+python scripts/sync_hf_space.py
+# after PRO:
+python scripts/sync_hf_space.py --space
+```
+
+Until a Docker Space is available, the live FastAPI demo is on Vercel (`https://hvac-two-kappa.vercel.app`) with `HVAC_BMS_MODE=simulation` and **simulator-only** control (`SIM WRITE ENABLED`). Production BMS writes stay off.
+
+Frontend:
+
+```bash
+cd frontend
+npx vercel --prod --yes --project frontend
+```
+
+Set `HVAC_API_ORIGIN` and `NEXT_PUBLIC_API_URL` to the API host. Smoke:
+
+```bash
+python scripts/smoke_demo.py https://hvac-two-kappa.vercel.app
+```
+
+---
 
 ```bash
 docker compose up

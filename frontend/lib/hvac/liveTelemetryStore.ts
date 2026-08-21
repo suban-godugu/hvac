@@ -34,6 +34,7 @@ type LiveState = {
   telemetrySource: string | null;
   safeMode: boolean;
   controlEnabled: boolean;
+  plantMode: 'DATASET' | 'LIVE_BMS' | null;
   lastUpdate: number | null;
   connectionState: WsConnectionState;
   events: TelemetryEvent[];
@@ -51,6 +52,7 @@ export const useLiveTelemetry = create<LiveState>((set, get) => ({
   telemetrySource: null,
   safeMode: false,
   controlEnabled: false,
+  plantMode: null,
   lastUpdate: null,
   connectionState: 'idle',
   events: [],
@@ -61,13 +63,19 @@ export const useLiveTelemetry = create<LiveState>((set, get) => ({
     const tel = frame.telemetry || {};
     set({
       connectionState,
-      bmsStatus: bmsLabel(bms.status),
-      telemetryStatus: telLabel(tel.status),
+      bmsStatus: frame.plantMode === 'DATASET' ? 'DISCONNECTED' : bmsLabel(bms.status),
+      telemetryStatus:
+        frame.plantMode === 'DATASET'
+          ? 'SIMULATED'
+          : telLabel(tel.status) === 'SIMULATED'
+            ? 'NO DATA'
+            : telLabel(tel.status),
       telemetryAgeSeconds: typeof tel.ageSeconds === 'number' ? tel.ageSeconds : null,
       telemetryQuality: tel.quality ? String(tel.quality) : null,
       telemetrySource: tel.source ? String(tel.source) : null,
       safeMode: Boolean(frame.safeMode),
-      controlEnabled: false,
+      controlEnabled: Boolean(frame.controlEnabled),
+      plantMode: frame.plantMode === 'LIVE_BMS' ? 'LIVE_BMS' : frame.plantMode === 'DATASET' ? 'DATASET' : get().plantMode,
       lastUpdate: Date.now(),
       events: Array.isArray(frame.events) ? frame.events : [],
       protocol: bms.protocol ? String(bms.protocol) : null,

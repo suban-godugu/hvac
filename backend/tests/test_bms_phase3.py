@@ -139,7 +139,7 @@ def test_o18_o19_o20_no_command(client: TestClient):
         assert rec["recommended"]["point"] is None
         assert rec["kind"] in ("ADVISORY", "MAINTENANCE", "REVIEW")
         assert rec["dispatch"]["allowed"] is False
-        assert rec["dispatch"]["code"] in ("ADVISORY", "MAINTENANCE_ONLY", "REVIEW_REQUIRED", "WRITE_DISABLED", "BMS_OFFLINE")
+        assert rec["dispatch"]["code"] in ("ADVISORY", "MAINTENANCE_ONLY", "REVIEW_REQUIRED", "WRITE_DISABLED", "BMS_OFFLINE", "SIMULATION_BLOCKED")
         assert rec["writes_attempted"] == 0
 
 

@@ -22,7 +22,7 @@ from backend.agents.scheduling_supervisory.o3_engine import MasterAHUSATOptimiza
 from backend.agents.scheduling_supervisory.o4_engine import ChillerCompressorStagingEngine
 from backend.agents.scheduling_supervisory.supervisory_decision_engine import SupervisoryDecisionEngine
 from backend.agents.scheduling_supervisory.safety_engine import SafetyEngine
-from backend.agents.scheduling_supervisory.gateway import BMSGatewayBase, SimulatorBMSGateway
+from backend.agents.scheduling_supervisory.gateway import BMSGatewayBase, get_bms_gateway
 from backend.agents.scheduling_supervisory.verification_engine import VerificationEngine
 from backend.agents.scheduling_supervisory.rollback_engine import RollbackEngine
 from backend.agents.scheduling_supervisory.audit_logger import AuditLogger
@@ -47,7 +47,7 @@ class SchedulingSupervisoryAgent:
         self.safety_engine = SafetyEngine()
 
         # 4. BMS Gateway & Execution
-        self.gateway = gateway or SimulatorBMSGateway()
+        self.gateway = gateway if gateway is not None else get_bms_gateway()
 
         # 5. Verification, Rollback & Audit
         self.verification_engine = VerificationEngine()
