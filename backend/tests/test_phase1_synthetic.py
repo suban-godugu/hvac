@@ -105,11 +105,11 @@ def test_all_agents_synthetic_ready_for_centre():
         assert card["telemetry"] == "SIMULATED"
         assert card["status"] == "READY"
         assert card["recommendation"] == "AVAILABLE"
-        assert card["control"] == "DISABLED"
+        assert card["control"] == "WRITE DISABLED"
         assert isinstance(card.get("model"), str)
         assert card["model"]  # registry label or em dash
         assert isinstance(card.get("engine"), str) and card["engine"]
-    assert all(g["controlAvailability"] == "DISABLED" for g in groups)
+    assert all(g["controlAvailability"] == "WRITE DISABLED" for g in groups)
 
 
 def test_demo_ml_models_fill_agent_centre(monkeypatch):
@@ -177,9 +177,9 @@ def test_sim_writes_enable_agent_centre_control(monkeypatch):
     assert classified.get("code") == "SIM_DISPATCH_OK"
     groups = agent_groups()
     cards = [c for g in groups for c in g["cards"]]
-    assert all(c["control"] == "ENABLED" for c in cards)
+    assert all(c["control"] == "WRITE ENABLED" for c in cards)
     assert all(isinstance(c.get("model"), str) and c["model"] for c in cards)
-    assert all(g["controlAvailability"] == "ENABLED" for g in groups)
+    assert all(g["controlAvailability"] == "WRITE ENABLED" for g in groups)
     # Ops kinds still never dispatch plant writes
     from backend.services.agent_recommendation_service import build_recommendation
 

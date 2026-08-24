@@ -42,15 +42,15 @@ def _agent_centre_model(opportunity_id: str, *, engine: Optional[str] = None) ->
 
 
 def _agent_centre_control(*, catalog_control: bool) -> str:
-    """Agent Centre CONTROL badge when sim or live writes are armed.
+    """Agent Centre write badge when sim or live writes are armed.
 
     Catalog `control` still gates real dispatch elsewhere; O17–O20 stay
     ADVISORY/MAINTENANCE/REVIEW and never plant-write.
     """
     _ = catalog_control
     if physical_writes_allowed() or simulated_writes_allowed():
-        return "ENABLED"
-    return "DISABLED"
+        return "WRITE ENABLED"
+    return "WRITE DISABLED"
 
 
 def _building() -> Optional[Dict[str, Any]]:
@@ -558,7 +558,9 @@ def agent_groups() -> List[Dict[str, Any]]:
         else:
             row["status"] = "HOLD"
         row["controlAvailability"] = (
-            "ENABLED" if any(str(c.get("control") or "").upper() == "ENABLED" for c in cards) else "DISABLED"
+            "WRITE ENABLED"
+            if any("ENABLED" in str(c.get("control") or "").upper() for c in cards)
+            else "WRITE DISABLED"
         )
         row["bms"] = snap["bms"]["status"]
         row["telemetry"] = sources[0] if sources else "NO DATA"

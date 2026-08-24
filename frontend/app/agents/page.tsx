@@ -30,8 +30,8 @@ function telDot(label?: string) {
 
 function controlLabel(raw?: string | null) {
   const v = String(raw || '').trim().toUpperCase();
-  if (v === 'ENABLED') return 'ENABLED';
-  return 'DISABLED';
+  if (v.includes('ENABLED') && !v.includes('DISABLED')) return 'WRITE ENABLED';
+  return 'WRITE DISABLED';
 }
 
 export default function AgentsPage() {
@@ -44,25 +44,25 @@ export default function AgentsPage() {
   const groups = data?.groups || [];
   const pageControl = groups.some(
     (g: { controlAvailability?: string; cards?: { control?: string }[] }) =>
-      controlLabel(g.controlAvailability) === 'ENABLED' ||
-      (g.cards || []).some((c) => controlLabel(c.control) === 'ENABLED')
+      controlLabel(g.controlAvailability) === 'WRITE ENABLED' ||
+      (g.cards || []).some((c) => controlLabel(c.control) === 'WRITE ENABLED')
   )
-    ? 'ENABLED'
-    : 'DISABLED';
+    ? 'WRITE ENABLED'
+    : 'WRITE DISABLED';
 
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
         icon={Users}
         title="Agent Control Center"
-        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Simulation allows CONTROL ENABLED on the synthetic plant only — live BMS writes stay gated."
+        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Simulation allows WRITE ENABLED on the synthetic plant only — live BMS writes stay gated."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone={toneForStatus(live.bmsStatus)}>BMS {live.bmsStatus}</StatusBadge>
         <StatusBadge tone={toneForStatus(live.telemetryStatus)}>TELEMETRY {live.telemetryStatus}</StatusBadge>
-        <StatusBadge tone={pageControl === 'ENABLED' ? 'live' : 'muted'} pulse={false}>
-          CONTROL {pageControl}
+        <StatusBadge tone={pageControl === 'WRITE ENABLED' ? 'live' : 'muted'} pulse={false}>
+          {pageControl}
         </StatusBadge>
       </div>
       <div className="space-y-6">
@@ -98,8 +98,8 @@ export default function AgentsPage() {
                   <StatusBadge tone="muted" pulse={false}>
                     REC {g.recommendation || 'UNAVAILABLE'}
                   </StatusBadge>
-                  <StatusBadge tone={groupControl === 'ENABLED' ? 'live' : 'muted'} pulse={false}>
-                    CONTROL {groupControl}
+                  <StatusBadge tone={groupControl === 'WRITE ENABLED' ? 'live' : 'muted'} pulse={false}>
+                    {groupControl}
                   </StatusBadge>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export default function AgentsPage() {
                         </div>
                         <div
                           className={`flex justify-between gap-2 ${
-                            ctrl === 'DISABLED' ? 'text-rose-300' : 'text-emerald-300'
+                            ctrl === 'WRITE DISABLED' ? 'text-rose-300' : 'text-emerald-300'
                           }`}
                         >
                           <span>CONTROL</span>

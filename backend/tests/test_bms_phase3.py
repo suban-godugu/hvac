@@ -154,8 +154,8 @@ def test_groups_write_disabled(client: TestClient):
     groups = res.json()["groups"]
     assert len(groups) == 5
     for g in groups:
-        assert g["controlAvailability"] == "DISABLED"
+        assert g["controlAvailability"] == "WRITE DISABLED"
         assert g.get("cards")
         for card in g["cards"]:
-            assert card["control"] == "DISABLED"
+            assert card["control"] == "WRITE DISABLED"
             assert isinstance(card.get("model"), str)
