@@ -472,6 +472,13 @@ def plant_overview() -> Dict[str, List[Dict[str, Any]]]:
 
 
 def agent_groups() -> List[Dict[str, Any]]:
+    try:
+        from backend.ml.registry.demo_seed import ensure_demo_ml_models
+
+        ensure_demo_ml_models()
+    except Exception:
+        pass
+
     snap = platform_snapshot()
     from backend.services.agent_recommendation_service import build_recommendation
     from backend.services.agent_telemetry_service import get_agent_context

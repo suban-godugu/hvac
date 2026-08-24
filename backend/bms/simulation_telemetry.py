@@ -373,6 +373,12 @@ def hydrate_synthetic_dataset() -> int:
         ensure_om_demo()
     except Exception:
         pass
+    try:
+        from backend.ml.registry.demo_seed import ensure_demo_ml_models
+
+        ensure_demo_ml_models()
+    except Exception:
+        pass
     return n
 
 

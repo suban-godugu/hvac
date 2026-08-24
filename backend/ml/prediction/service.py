@@ -140,8 +140,21 @@ def predict(opportunity_id: str, features: Optional[Dict[str, Any]] = None, agen
             "source": "ML_MODEL",
         }
     model_row = info["model"]
+    artifact_path = model_row.get("artifact_path")
+    if not artifact_path:
+        return {
+            "status": "MODEL_NOT_AVAILABLE",
+            "opportunity_id": oid,
+            "model_id": model_row["model_id"],
+            "prediction": None,
+            "confidence": None,
+            "provenance": "NO DATA",
+            "training_dataset": model_row.get("training_dataset_id"),
+            "engineering_validation": "Artifact missing.",
+            "source": "ML_MODEL",
+        }
     try:
-        artifact = _load_artifact(model_row["artifact_path"])
+        artifact = _load_artifact(artifact_path)
     except OSError:
         return {
             "status": "MODEL_NOT_AVAILABLE",

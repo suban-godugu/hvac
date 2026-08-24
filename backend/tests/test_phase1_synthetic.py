@@ -111,6 +111,30 @@ def test_all_agents_synthetic_ready_for_centre():
     assert all(g["controlAvailability"] == "DISABLED" for g in groups)
 
 
+def test_demo_ml_models_fill_agent_centre(monkeypatch):
+    """Simulation demo seeds Random Forest for trainable O's; not-trainable stay em dash."""
+    monkeypatch.setenv("HVAC_BMS_MODE", "simulation")
+    monkeypatch.setenv("HVAC_USE_SIMULATION", "1")
+    from database.session import init_db
+    from backend.ml.registry.demo_seed import ensure_demo_ml_models
+    from backend.services.platform_bms_service import agent_groups
+
+    init_db()
+    ensure_demo_ml_models(force=True)
+    cards = {c["id"]: c for g in agent_groups() for c in g["cards"]}
+    trainable = {
+        "O1", "O2", "O3", "O4", "O5", "O6", "O7", "O8", "O9",
+        "O11", "O12", "O14", "O15", "O16", "O17", "O19",
+    }
+    not_trainable = {"O10", "O13", "O18", "O20"}
+    for oid in trainable:
+        assert cards[oid]["model"] == "Random Forest", oid
+    for oid in not_trainable:
+        assert cards[oid]["model"] == "—", oid
+    # Idempotent when registry already covered
+    assert ensure_demo_ml_models(force=True) == 0
+
+
 def test_sim_writes_do_not_enable_agent_centre_control(monkeypatch):
     monkeypatch.setenv("HVAC_BMS_MODE", "simulation")
     monkeypatch.setenv("HVAC_USE_SIMULATION", "1")
