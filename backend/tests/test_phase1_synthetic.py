@@ -177,13 +177,16 @@ def test_sim_writes_enable_agent_centre_control(monkeypatch):
     assert classified.get("code") == "SIM_DISPATCH_OK"
     groups = agent_groups()
     cards = [c for g in groups for c in g["cards"]]
-    for c in cards:
-        if catalog_for(c["id"]).get("control"):
-            assert c["control"] == "ENABLED", c["id"]
-        else:
-            assert c["control"] == "DISABLED", c["id"]
+    assert all(c["control"] == "ENABLED" for c in cards)
     assert all(isinstance(c.get("model"), str) and c["model"] for c in cards)
-    assert any(g["controlAvailability"] == "ENABLED" for g in groups)
+    assert all(g["controlAvailability"] == "ENABLED" for g in groups)
+    # Ops kinds still never dispatch plant writes
+    from backend.services.agent_recommendation_service import build_recommendation
+
+    for oid in ("O17", "O18", "O19", "O20"):
+        rec = build_recommendation(oid)
+        assert rec["dispatch"]["allowed"] is False, oid
+        assert catalog_for(oid).get("kind") in ("ADVISORY", "MAINTENANCE", "REVIEW")
 
 
 def test_o15_o16_read_simulation_catalog():

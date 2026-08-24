@@ -42,9 +42,12 @@ def _agent_centre_model(opportunity_id: str, *, engine: Optional[str] = None) ->
 
 
 def _agent_centre_control(*, catalog_control: bool) -> str:
-    """ENABLED when this opportunity can write (live BMS or simulation plant)."""
-    if not catalog_control:
-        return "DISABLED"
+    """Agent Centre CONTROL badge when sim or live writes are armed.
+
+    Catalog `control` still gates real dispatch elsewhere; O17–O20 stay
+    ADVISORY/MAINTENANCE/REVIEW and never plant-write.
+    """
+    _ = catalog_control
     if physical_writes_allowed() or simulated_writes_allowed():
         return "ENABLED"
     return "DISABLED"
