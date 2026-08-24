@@ -42,8 +42,10 @@ def _agent_centre_model(opportunity_id: str, *, engine: Optional[str] = None) ->
 
 
 def _agent_centre_control(*, catalog_control: bool) -> str:
-    """Agent Centre labels: ENABLED only on a commissioned live-BMS write path."""
-    if catalog_control and physical_writes_allowed():
+    """ENABLED when this opportunity can write (live BMS or simulation plant)."""
+    if not catalog_control:
+        return "DISABLED"
+    if physical_writes_allowed() or simulated_writes_allowed():
         return "ENABLED"
     return "DISABLED"
 

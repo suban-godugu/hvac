@@ -24,7 +24,7 @@ test.describe('Phase 2 control room', () => {
     expect(body).not.toMatch(/BMS LIVE/);
   });
 
-  test('agent center shows five groups, ENGINE/MODEL rows, and CONTROL DISABLED', async ({ page }) => {
+  test('agent center shows ENGINE/MODEL and CONTROL ENABLED in simulation', async ({ page }) => {
     await page.goto('/agents');
     await expect(page.locator('body')).toContainText('Scheduling');
     await expect(page.locator('body')).toContainText('Plant Control');
@@ -34,9 +34,8 @@ test.describe('Phase 2 control room', () => {
     await expect(page.locator('body')).toContainText('ENGINE');
     await expect(page.locator('body')).toContainText('MODEL');
     await expect(page.locator('body')).toContainText('CONTROL');
-    await expect(page.locator('body')).toContainText('DISABLED');
+    await expect(page.locator('body')).toContainText('ENABLED');
     await expect(page.locator('body')).not.toContainText('SIM WRITE ENABLED');
-    await expect(page.locator('body')).not.toContainText('SIM CONTROL ON');
     await expect(page.locator('header')).not.toContainText('BMS LIVE');
   });
 });

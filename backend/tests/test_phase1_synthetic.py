@@ -141,7 +141,7 @@ def test_demo_ml_models_fill_agent_centre(monkeypatch):
     assert ensure_demo_ml_models(force=True) == 0
 
 
-def test_sim_writes_do_not_enable_agent_centre_control(monkeypatch):
+def test_sim_writes_enable_agent_centre_control(monkeypatch):
     monkeypatch.setenv("HVAC_BMS_MODE", "simulation")
     monkeypatch.setenv("HVAC_USE_SIMULATION", "1")
     monkeypatch.setenv("HVAC_ALLOW_SIM_WRITES", "1")
@@ -150,6 +150,7 @@ def test_sim_writes_do_not_enable_agent_centre_control(monkeypatch):
     from backend.bms.command_writer import simulated_writes_allowed, write_point
     from backend.bms.simulation_telemetry import publish_once
     from backend.services.hvac_safety_contract import evaluate_dispatch
+    from backend.services.opportunity_feature_catalog import catalog_for
     from backend.services.platform_bms_service import agent_groups, platform_snapshot
 
     init_db()
@@ -176,9 +177,13 @@ def test_sim_writes_do_not_enable_agent_centre_control(monkeypatch):
     assert classified.get("code") == "SIM_DISPATCH_OK"
     groups = agent_groups()
     cards = [c for g in groups for c in g["cards"]]
-    assert all(c["control"] == "DISABLED" for c in cards)
+    for c in cards:
+        if catalog_for(c["id"]).get("control"):
+            assert c["control"] == "ENABLED", c["id"]
+        else:
+            assert c["control"] == "DISABLED", c["id"]
     assert all(isinstance(c.get("model"), str) and c["model"] for c in cards)
-    assert all(g["controlAvailability"] == "DISABLED" for g in groups)
+    assert any(g["controlAvailability"] == "ENABLED" for g in groups)
 
 
 def test_o15_o16_read_simulation_catalog():

@@ -55,7 +55,7 @@ export default function AgentsPage() {
       <PageHeader
         icon={Users}
         title="Agent Control Center"
-        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Demo keeps CONTROL DISABLED — production BMS writes stay gated."
+        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Simulation allows CONTROL ENABLED on the synthetic plant only — live BMS writes stay gated."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
