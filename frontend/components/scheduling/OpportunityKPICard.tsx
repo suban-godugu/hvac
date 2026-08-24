@@ -36,9 +36,13 @@ export interface OpportunityKpi {
 }
 
 function fmt(m?: KpiMetric | null) {
-  if (!m) return { text: 'DATA NOT AVAILABLE', missing: true, reason: undefined as string | undefined };
+  if (!m) return { text: 'MODEL NOT READY', missing: true, reason: undefined as string | undefined };
   if (m.value === null || m.value === undefined || m.value === '') {
-    return { text: 'DATA NOT AVAILABLE', missing: true, reason: m.unavailableReason || undefined };
+    const reason = String(m.unavailableReason || '');
+    if (/model not ready|confidence not set|no decision confidence/i.test(reason)) {
+      return { text: 'MODEL NOT READY', missing: true, reason: reason || undefined };
+    }
+    return { text: 'DATA NOT AVAILABLE', missing: true, reason: reason || undefined };
   }
   const unit = m.unit ? ` ${m.unit}` : '';
   return { text: `${m.value}${unit}`, missing: false, reason: undefined as string | undefined };

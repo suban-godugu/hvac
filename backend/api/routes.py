@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
+import os
 from backend.services.simulation_service import sim_service
 from backend.agents.scheduling_supervisory.audit_logger import AuditLogger
 from backend.agents.scheduling_supervisory.worker import control_worker
@@ -235,7 +236,19 @@ def get_scheduling_verifications():
 
 @router.get("/agents/scheduling/telemetry")
 def get_scheduling_telemetry():
-    return sim_service.telemetry_history
+    """Baseline vs optimized power series for the scheduling chart."""
+    hist = list(sim_service.telemetry_history or [])
+    if len(hist) < 8:
+        try:
+            from backend.bms.connection_manager import is_simulation_mode
+
+            if is_simulation_mode() or os.getenv("HVAC_USE_SIMULATION", "0").strip() in ("1", "true", "TRUE"):
+                for _ in range(max(0, 12 - len(hist))):
+                    sim_service.step(elapsed_minutes=5)
+                hist = list(sim_service.telemetry_history or [])
+        except Exception:
+            pass
+    return hist
 
 @router.get("/agents/scheduling/activity")
 def get_scheduling_activity():

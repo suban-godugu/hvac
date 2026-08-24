@@ -379,6 +379,12 @@ def hydrate_synthetic_dataset() -> int:
         ensure_demo_ml_models()
     except Exception:
         pass
+    try:
+        from backend.services.plant_control_service import plant_control_service
+
+        plant_control_service.ensure_demo_activity()
+    except Exception:
+        pass
     return n
 
 

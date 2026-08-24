@@ -298,8 +298,7 @@ def _build_o1(age: Optional[float], freshness: str, now_iso: str, dataset: bool 
             elif energy.get("daily_energy_savings_kwh") is not None:
                 sav = f"{energy['daily_energy_savings_kwh']} kWh/day predicted"
         conf = kpis.get("model_confidence")
-        if conf == "MODEL NOT READY":
-            conf = None
+        # Keep MODEL NOT READY visible on cards — do not blank to DATA NOT AVAILABLE.
         safety = None
         try:
             chk = o1_service.get_safety_checks()
@@ -880,18 +879,33 @@ def get_scheduling_dashboard() -> Dict[str, Any]:
         comfort = round(100.0 * ok / len(zones), 1)
 
     active = sum(1 for o in opps if o.get("dataState") == "LIVE")
+    if dataset and active == 0:
+        # Dataset cards often use STALE/LAST_KNOWN while still healthy — count usable ones.
+        active = sum(
+            1
+            for o in opps
+            if o.get("dataState") in ("LIVE", "STALE", "LAST_KNOWN")
+            or (o.get("currentValue") or o.get("optimizedValue"))
+        )
     engine_ok = all(o.get("displayState") != "ENGINE NOT CONFIGURED" for o in opps)
     model_ok = o1.get("modelVersion") is not None or o1.get("confidence") is not None
     from backend.agents.scheduling_supervisory.gateway import get_bms_gateway
     gw = get_bms_gateway()
     bms = "CONNECTED" if getattr(gw, "is_production_connected", lambda: False)() else "OFFLINE"
+    # Health must follow opportunity heartbeat — never the unused age=None → OFFLINE path.
+    health_freshness = _freshness(hb, live_s=live_s) if hb is not None else ("SIMULATED" if dataset else "OFFLINE")
     if sim_err:
         health = "BACKEND OFFLINE"
+    elif dataset:
+        if engine_ok and (model_ok or active or hb is not None):
+            health = "OPTIMAL"
+        else:
+            health = "MONITORING"
     elif not dbk.get("dbOk"):
         health = "DEGRADED"
-    elif freshness in ("STALE", "DEGRADED"):
+    elif health_freshness in ("STALE", "DEGRADED"):
         health = "STALE"
-    elif freshness == "OFFLINE":
+    elif health_freshness == "OFFLINE":
         health = "OFFLINE"
     elif engine_ok and (model_ok or active):
         health = "OPTIMAL"
@@ -914,12 +928,12 @@ def get_scheduling_dashboard() -> Dict[str, Any]:
         "telemetryHeartbeatLabel": _age_label(hb) if hb is not None else None,
         "telemetryFreshness": (
             "SIMULATED"
-            if bms != "CONNECTED" and hb is not None
-            else (_freshness(hb, live_s=live_s) if hb is not None else "OFFLINE")
+            if (dataset or bms != "CONNECTED") and hb is not None
+            else (_freshness(hb, live_s=live_s) if hb is not None else ("SIMULATED" if dataset else "OFFLINE"))
         ),
         "safetyRollbacks": dbk.get("safetyRollbacks"),
         "dataQualityValid": bool((sim or {}).get("data_quality_valid", True)) if sim else None,
-        "bmsConnectivity": bms,
+        "bmsConnectivity": "SIMULATED" if dataset else bms,
         "databaseHealth": "OK" if dbk.get("dbOk") else "UNAVAILABLE",
         "engineHealth": "OK" if engine_ok else "DEGRADED",
         "modelHealth": "OK" if model_ok else "MODEL NOT READY",

@@ -205,6 +205,8 @@ class TestSimVerifiedSavingsKpi(unittest.TestCase):
         self.assertIsNotNone(dash.get("verifiedSavingsKwh"))
         self.assertGreater(float(dash["verifiedSavingsKwh"]), 0)
         self.assertTrue(str(dash.get("verifiedSavings") or "").endswith("kWh"))
+        self.assertNotEqual(dash.get("agentHealth"), "OFFLINE")
+        self.assertIn(dash.get("agentHealth"), ("OPTIMAL", "MONITORING", "DEGRADED", "STALE"))
 
 
 if __name__ == "__main__":

@@ -190,8 +190,26 @@ export default function FleetOverviewPage() {
 
   const buildingName = platform.data?.building?.name || buildings.data?.buildings?.[0]?.name;
   const verifiedKw = cycleData?.savings_summary?.verified_kw;
-  const comfortPct = cycleData?.savings_summary?.comfort_compliance_pct;
-  const totalPlantTons = cycleData?.plant?.total_tons;
+  const comfortPct =
+    cycleData?.savings_summary?.comfort_compliance_pct ?? scheduling.data?.comfortCompliancePct ?? null;
+  const totalPlantTons =
+    cycleData?.plant?.total_tons ??
+    (scheduling.data?.opportunities || [])
+      .map((o: { secondaryMetrics?: { label?: string; value?: string | number | null }[] }) =>
+        (o.secondaryMetrics || []).find((m) => /plant load/i.test(String(m.label || '')))
+      )
+      .map((m: { value?: string | number | null } | undefined) => {
+        if (!m || m.value == null) return null;
+        const n = Number(String(m.value).replace(/[^\d.-]/g, ''));
+        return Number.isFinite(n) ? n : null;
+      })
+      .find((n: number | null) => n != null) ?? null;
+  const verifiedDisplay =
+    verifiedKw != null
+      ? `+${Number(verifiedKw).toFixed(1)} kW`
+      : scheduling.data?.verifiedSavings
+        ? String(scheduling.data.verifiedSavings)
+        : null;
   const cards = fleetOpportunityCards();
   const fleetSources = {
     plant: plantDash.data,
@@ -227,8 +245,12 @@ export default function FleetOverviewPage() {
           },
           {
             label: 'Verified Energy Shed',
-            value: verifiedKw != null ? `+${Number(verifiedKw).toFixed(1)} kW` : null,
-            detail: 'Verified supervisory energy impact',
+            value: verifiedDisplay,
+            detail: verifiedKw != null
+              ? 'Verified supervisory energy impact'
+              : scheduling.data?.verifiedSavings
+                ? 'From scheduling O1 verified savings'
+                : 'Verified supervisory energy impact',
             icon: Zap,
           },
           {

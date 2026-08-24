@@ -235,7 +235,7 @@ export const Header: React.FC = () => {
               TEL {telemetryLabel} {ageText}
             </StatusBadge>
             <StatusBadge tone={live.controlEnabled ? 'live' : 'muted'} pulse={false}>
-              {live.controlEnabled ? (plantMode === 'DATASET' ? 'SIM CONTROL ON' : 'CONTROL ENABLED') : 'CONTROL DISABLED'}
+              {live.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED'}
             </StatusBadge>
           </div>
           <select

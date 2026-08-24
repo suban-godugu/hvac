@@ -74,6 +74,7 @@ class PlantControlService:
 
     def get_activity_log(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Returns recent activity logs for Plant Control Parameter Optimizations."""
+        self.ensure_demo_activity()
         db = SessionLocal()
         try:
             logs = db.query(PlantControlActivityLogDB).order_by(PlantControlActivityLogDB.timestamp.desc()).limit(limit).all()
@@ -94,6 +95,50 @@ class PlantControlService:
         finally:
             db.close()
         return []
+
+    def ensure_demo_activity(self) -> int:
+        """Seed evaluation activity rows in simulation when the log is empty."""
+        import os
+
+        try:
+            from backend.bms.connection_manager import is_simulation_mode
+
+            if not is_simulation_mode():
+                return 0
+        except Exception:
+            if os.getenv("HVAC_USE_SIMULATION", "0").strip() not in ("1", "true", "TRUE"):
+                return 0
+        if os.getenv("HVAC_USE_SIMULATION", "0").strip() not in ("1", "true", "TRUE"):
+            return 0
+
+        db = SessionLocal()
+        try:
+            if db.query(PlantControlActivityLogDB).count() > 0:
+                return 0
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            return 0
+        finally:
+            db.close()
+
+        seeds = [
+            ("O5", "EVALUATE", "Duct static pressure reset evaluated — trim candidate selected."),
+            ("O6", "EVALUATE", "HHW supply reset evaluated against outdoor-air curve."),
+            ("O7", "EVALUATE", "CHW supply reset evaluated — lift vs pumping tradeoff."),
+            ("O8", "EVALUATE", "Condenser-water reset evaluated — approach within guardrails."),
+            ("O9", "REVIEW", "EXV retrofit assessment refreshed — engineering review required."),
+        ]
+        n = 0
+        for oid, stage, message in seeds:
+            try:
+                self.log_activity(oid, stage, message, {"source": "SIMULATION", "seed": True})
+                n += 1
+            except Exception:
+                pass
+        return n
 
     def log_activity(self, opportunity: str, stage: str, message: str, detail: Optional[Dict[str, Any]] = None):
         """Persists a new event to the plant control activity log."""

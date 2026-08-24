@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LIVE_POLL_MS } from '@/lib/hvac/poll';
-import { fetchSchedulingDashboard, fetchStatus } from '@/lib/api';
+import { fetchHistory, fetchSchedulingDashboard, fetchStatus } from '@/lib/api';
 import { useSupervisoryStore } from '@/lib/store';
 import { TopKPIs } from '@/components/scheduling/TopKPIs';
 import { OpportunityCard } from '@/components/scheduling/OpportunityCard';
@@ -30,9 +30,15 @@ export default function SchedulingAgentPage() {
     queryFn: fetchStatus,
     refetchInterval: LIVE_POLL_MS,
   });
+  const history = useQuery({
+    queryKey: ['scheduling-telemetry-history'],
+    queryFn: fetchHistory,
+    refetchInterval: LIVE_POLL_MS,
+  });
   const { agentMode, isLimitsModalOpen, setIsLimitsModalOpen } = useSupervisoryStore();
   const data = dash.data;
   const offline = dash.isError && !data;
+  const chartData = Array.isArray(history.data) ? history.data : [];
 
   return (
     <div className="space-y-6 pb-12">
@@ -59,7 +65,7 @@ export default function SchedulingAgentPage() {
 
       <MlSectionStrip opportunityIds={['O1', 'O2', 'O3', 'O4']} />
       <ModelStatusPanel opportunities={data?.opportunities} />
-      <TemperatureChart data={cycle.data} />
+      <TemperatureChart data={chartData} />
       <SafetyValidationPanel data={cycle.data} dashboard={data} />
       <AgentDecisionPanel data={cycle.data} actions={data?.candidateActions} />
       <LiveControlLog activities={data?.activity} />
