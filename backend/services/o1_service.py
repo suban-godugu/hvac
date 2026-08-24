@@ -58,7 +58,8 @@ def _ensure_run() -> str:
             sim_state = sim_service.get_latest_status() or {}
         except Exception:
             sim_state = {}
-    result = run_daily(sim_state or None, persist_sim=bool(sim_state) and use_sim, verify=False)
+    # Simulation: verify engine savings so Scheduling "Verified Savings" KPI can display.
+    result = run_daily(sim_state or None, persist_sim=bool(sim_state) and use_sim, verify=use_sim)
     return result["run_id"]
 
 

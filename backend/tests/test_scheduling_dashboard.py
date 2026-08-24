@@ -181,5 +181,31 @@ class TestDashboardKpiCards(unittest.TestCase):
         self.assertNotEqual(self.dash.get("verifiedSavingsKwh"), 17.8)
 
 
+class TestSimVerifiedSavingsKpi(unittest.TestCase):
+    def test_ensure_sim_verified_savings_fills_kpi(self):
+        os.environ["HVAC_BMS_MODE"] = "simulation"
+        os.environ["HVAC_USE_SIMULATION"] = "1"
+        init_db()
+        ensure_point_map_and_config()
+        ingest_samples(
+            [
+                {"signal": "ZONE_TEMP", "value": 24.2, "quality": "GOOD", "source": "SIMULATION", "timestamp": datetime.utcnow()},
+                {"signal": "OAT", "value": 29.0, "quality": "GOOD", "source": "SIMULATION", "timestamp": datetime.utcnow()},
+                {"signal": "ALARM", "value": 0, "quality": "GOOD", "source": "SIMULATION", "timestamp": datetime.utcnow()},
+                {"signal": "EQUIP_AVAIL", "value": 1, "quality": "GOOD", "source": "SIMULATION", "timestamp": datetime.utcnow()},
+            ],
+            source="SIMULATION",
+        )
+        from backend.services.scheduling_dashboard_service import ensure_sim_verified_savings, get_scheduling_dashboard
+        from backend.services.ttl_cache import cache_delete
+
+        cache_delete("sched_db_kpis")
+        ensure_sim_verified_savings()
+        dash = get_scheduling_dashboard()
+        self.assertIsNotNone(dash.get("verifiedSavingsKwh"))
+        self.assertGreater(float(dash["verifiedSavingsKwh"]), 0)
+        self.assertTrue(str(dash.get("verifiedSavings") or "").endswith("kWh"))
+
+
 if __name__ == "__main__":
     unittest.main()

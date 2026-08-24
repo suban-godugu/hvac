@@ -46,7 +46,7 @@ export const TopKPIs: React.FC<TopKPIsProps> = ({ data, backendOffline }) => {
           label: 'Verified Savings',
           value: data?.verifiedSavings ?? null,
           icon: Zap,
-          detail: 'VERIFIED records only',
+          detail: data?.verifiedSavings ? 'VERIFIED records' : 'VERIFIED records only',
         },
         {
           label: 'Comfort Compliance',
