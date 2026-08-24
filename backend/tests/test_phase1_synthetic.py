@@ -105,10 +105,13 @@ def test_all_agents_synthetic_ready_for_centre():
         assert card["telemetry"] == "SIMULATED"
         assert card["status"] == "READY"
         assert card["recommendation"] == "AVAILABLE"
-        assert card["control"] == "WRITE DISABLED"
+        assert card["control"] == "DISABLED"
+        assert isinstance(card.get("model"), str)
+        assert card["model"]  # registry label or em dash
+    assert all(g["controlAvailability"] == "DISABLED" for g in groups)
 
 
-def test_sim_writes_enable_agent_centre_control(monkeypatch):
+def test_sim_writes_do_not_enable_agent_centre_control(monkeypatch):
     monkeypatch.setenv("HVAC_BMS_MODE", "simulation")
     monkeypatch.setenv("HVAC_USE_SIMULATION", "1")
     monkeypatch.setenv("HVAC_ALLOW_SIM_WRITES", "1")
@@ -143,10 +146,9 @@ def test_sim_writes_enable_agent_centre_control(monkeypatch):
     assert classified.get("code") == "SIM_DISPATCH_OK"
     groups = agent_groups()
     cards = [c for g in groups for c in g["cards"]]
-    control_cards = [c for c in cards if c["id"] not in ("O17", "O18", "O19", "O20")]
-    advisory = [c for c in cards if c["id"] in ("O17", "O18", "O19", "O20")]
-    assert all(c["control"] == "SIM WRITE ENABLED" for c in control_cards)
-    assert all(c["control"] == "WRITE DISABLED" for c in advisory)
+    assert all(c["control"] == "DISABLED" for c in cards)
+    assert all(isinstance(c.get("model"), str) and c["model"] for c in cards)
+    assert all(g["controlAvailability"] == "DISABLED" for g in groups)
 
 
 def test_o15_o16_read_simulation_catalog():

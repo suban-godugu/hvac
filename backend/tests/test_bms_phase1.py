@@ -261,7 +261,7 @@ def test_agents_endpoint(client: TestClient):
     groups = res.json()["groups"]
     assert len(groups) == 5
     assert groups[0]["status"] in ("BMS OFFLINE", "WAITING FOR TELEMETRY", "HOLD", "READY", "SAFE MODE", "WRITE DISABLED")
-    assert groups[0]["controlAvailability"] == "WRITE DISABLED"
+    assert groups[0]["controlAvailability"] == "DISABLED"
 
 
 def test_no_fake_seed_points():

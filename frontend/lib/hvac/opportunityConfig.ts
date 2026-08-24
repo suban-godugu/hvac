@@ -22,7 +22,10 @@ export function opportunitiesForSection(section: HvacSectionId): OpportunityDef[
 }
 
 export function getOpportunity(id: string): OpportunityDef | undefined {
-  return OPPORTUNITIES.find((o) => o.id === id);
+  const oid = (id || '').trim().toUpperCase();
+  const direct = OPPORTUNITIES.find((o) => o.id === oid || o.id === id);
+  if (direct) return direct;
+  return TEMP_RESET_OPPS.find((o) => o.id === oid);
 }
 
 const groupedReset = () => getOpportunity('O6-O8')!;

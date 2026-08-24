@@ -2,13 +2,47 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Dict, List, Optional
 
-from backend.bms.command_writer import control_writes_status, physical_writes_allowed, simulated_writes_allowed, write_enabled_flag
+from backend.bms.command_writer import physical_writes_allowed, simulated_writes_allowed, write_enabled_flag
 from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
 from backend.bms.point_mapper import canonical_catalog, mapping_to_dict
 from backend.services.canonical_telemetry_service import latest_points
 from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source, is_safe_mode
+
+
+def _format_registry_model_label(raw: Optional[str]) -> str:
+    """Display-only spacing for registry algorithm strings. Never invents a model name."""
+    if raw is None:
+        return "—"
+    s = str(raw).strip()
+    if not s:
+        return "—"
+    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", s)
+    spaced = spaced.replace("_", " ").replace("-", " ")
+    return " ".join(spaced.split()) or "—"
+
+
+def _agent_centre_model(opportunity_id: str) -> str:
+    """Algorithm from ML registry only. Missing / not ready → em dash."""
+    try:
+        from backend.ml.prediction.service import model_status
+
+        st = model_status(opportunity_id)
+    except Exception:
+        return "—"
+    if st.get("status") != "MODEL_READY":
+        return "—"
+    model = st.get("model") or {}
+    return _format_registry_model_label(model.get("model_type"))
+
+
+def _agent_centre_control(*, catalog_control: bool) -> str:
+    """Agent Centre labels: ENABLED only on a commissioned live-BMS write path."""
+    if catalog_control and physical_writes_allowed():
+        return "ENABLED"
+    return "DISABLED"
 
 
 def _building() -> Optional[Dict[str, Any]]:
@@ -484,7 +518,7 @@ def agent_groups() -> List[Dict[str, Any]]:
                 tel_label = "NO DATA"
             sources.append(tel_label)
             spec = catalog_for(oid)
-            ctrl = "WRITE DISABLED" if not spec.get("control") else control_writes_status()
+            ctrl = _agent_centre_control(catalog_control=bool(spec.get("control")))
             cards.append(
                 {
                     "id": oid,
@@ -492,6 +526,7 @@ def agent_groups() -> List[Dict[str, Any]]:
                     "telemetry": tel_label,
                     "recommendation": rec.get("recommendation_status"),
                     "control": ctrl,
+                    "model": _agent_centre_model(oid),
                     "kind": spec.get("kind") or "CONTROL",
                     "missing_features": ctx.get("missing_features") or [],
                 }
@@ -505,10 +540,9 @@ def agent_groups() -> List[Dict[str, Any]]:
             row["status"] = "READY"
         else:
             row["status"] = "HOLD"
-        if cards and all(str(c.get("control") or "").upper().find("DISABLED") >= 0 for c in cards):
-            row["controlAvailability"] = "WRITE DISABLED"
-        else:
-            row["controlAvailability"] = control_writes_status()
+        row["controlAvailability"] = (
+            "ENABLED" if any(str(c.get("control") or "").upper() == "ENABLED" for c in cards) else "DISABLED"
+        )
         row["bms"] = snap["bms"]["status"]
         row["telemetry"] = sources[0] if sources else "NO DATA"
         row["recommendation"] = "AVAILABLE" if any(r == "AVAILABLE" for r in recs) else "UNAVAILABLE"

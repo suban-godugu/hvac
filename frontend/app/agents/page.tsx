@@ -28,6 +28,12 @@ function telDot(label?: string) {
   return 'bg-slate-500';
 }
 
+function controlLabel(raw?: string | null) {
+  const v = String(raw || '').trim().toUpperCase();
+  if (v === 'ENABLED') return 'ENABLED';
+  return 'DISABLED';
+}
+
 export default function AgentsPage() {
   const live = useLiveTelemetry();
   const { data } = useQuery({
@@ -36,20 +42,27 @@ export default function AgentsPage() {
     refetchInterval: PLATFORM_POLL_MS,
   });
   const groups = data?.groups || [];
+  const pageControl = groups.some(
+    (g: { controlAvailability?: string; cards?: { control?: string }[] }) =>
+      controlLabel(g.controlAvailability) === 'ENABLED' ||
+      (g.cards || []).some((c) => controlLabel(c.control) === 'ENABLED')
+  )
+    ? 'ENABLED'
+    : 'DISABLED';
 
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
         icon={Users}
         title="Agent Control Center"
-        subtitle="Shared canonical telemetry. Synthetic plant control writes the simulator only — never a live BMS."
+        subtitle="Canonical telemetry and ML registry models. Demo and simulation keep CONTROL DISABLED — production BMS writes stay gated."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone={toneForStatus(live.bmsStatus)}>BMS {live.bmsStatus}</StatusBadge>
         <StatusBadge tone={toneForStatus(live.telemetryStatus)}>TELEMETRY {live.telemetryStatus}</StatusBadge>
-        <StatusBadge tone={live.controlEnabled ? 'live' : 'muted'} pulse={false}>
-          {live.controlEnabled ? 'SIM CONTROL ON' : 'WRITE DISABLED'}
+        <StatusBadge tone={pageControl === 'ENABLED' ? 'live' : 'muted'} pulse={false}>
+          CONTROL {pageControl}
         </StatusBadge>
       </div>
       <div className="space-y-6">
@@ -67,9 +80,12 @@ export default function AgentsPage() {
               telemetry: string;
               recommendation: string;
               control: string;
+              model?: string;
               kind?: string;
             }[];
-          }) => (
+          }) => {
+            const groupControl = controlLabel(g.controlAvailability);
+            return (
             <section key={g.id} className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <Link href={g.href} className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 hover:text-cyan-200">
@@ -81,8 +97,8 @@ export default function AgentsPage() {
                   <StatusBadge tone="muted" pulse={false}>
                     REC {g.recommendation || 'UNAVAILABLE'}
                   </StatusBadge>
-                  <StatusBadge tone="muted" pulse={false}>
-                    {g.controlAvailability || 'WRITE DISABLED'}
+                  <StatusBadge tone={groupControl === 'ENABLED' ? 'live' : 'muted'} pulse={false}>
+                    CONTROL {groupControl}
                   </StatusBadge>
                 </div>
               </div>
@@ -91,6 +107,7 @@ export default function AgentsPage() {
                   const def = getOpportunity(card.id);
                   const href = def?.route || g.href;
                   const waiting = String(card.status || '').includes('WAITING');
+                  const ctrl = controlLabel(card.control);
                   return (
                     <Link
                       key={card.id}
@@ -129,13 +146,17 @@ export default function AgentsPage() {
                           <span>RECOMMENDATION</span>
                           <span className="text-slate-200 text-right">{card.recommendation}</span>
                         </div>
+                        <div className="flex justify-between gap-2">
+                          <span>MODEL</span>
+                          <span className="text-slate-200 text-right">{card.model || '—'}</span>
+                        </div>
                         <div
                           className={`flex justify-between gap-2 ${
-                            String(card.control || '').includes('DISABLED') ? 'text-rose-300' : 'text-emerald-300'
+                            ctrl === 'DISABLED' ? 'text-rose-300' : 'text-emerald-300'
                           }`}
                         >
                           <span>CONTROL</span>
-                          <span>{card.control || 'WRITE DISABLED'}</span>
+                          <span>{ctrl}</span>
                         </div>
                       </div>
                       {waiting ? (
@@ -146,7 +167,8 @@ export default function AgentsPage() {
                 })}
               </div>
             </section>
-          )
+            );
+          }
         )}
       </div>
       {groups.length === 0 && (
