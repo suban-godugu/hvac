@@ -341,11 +341,38 @@ CATALOG: Dict[str, Dict[str, Any]] = {
 }
 
 
+# What the opportunity agent uses to decide (not only the sklearn registry row).
+ENGINE_BY_OID: Dict[str, str] = {
+    "O1": "Random Forest",
+    "O2": "Random Forest",
+    "O3": "Random Forest",
+    "O4": "Random Forest",
+    "O5": "Random Forest",
+    "O6": "Random Forest",
+    "O7": "Random Forest",
+    "O8": "Random Forest",
+    "O9": "Random Forest",
+    "O10": "Enthalpy rules",
+    "O11": "Random Forest",
+    "O12": "Random Forest",
+    "O13": "CO thresholds",
+    "O14": "Random Forest",
+    "O15": "Random Forest",
+    "O16": "Random Forest",
+    "O17": "Random Forest",
+    "O18": "Training records",
+    "O19": "Random Forest",
+    "O20": "Controls review",
+}
+
+
 def catalog_for(opportunity_id: str) -> Dict[str, Any]:
     oid = (opportunity_id or "").strip().upper()
     if oid not in CATALOG:
         raise KeyError(oid)
-    return CATALOG[oid]
+    row = dict(CATALOG[oid])
+    row["engine"] = ENGINE_BY_OID.get(oid) or row.get("engine") or "—"
+    return row
 
 
 def all_opportunity_ids() -> List[str]:

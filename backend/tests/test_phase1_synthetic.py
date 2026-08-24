@@ -108,6 +108,7 @@ def test_all_agents_synthetic_ready_for_centre():
         assert card["control"] == "DISABLED"
         assert isinstance(card.get("model"), str)
         assert card["model"]  # registry label or em dash
+        assert isinstance(card.get("engine"), str) and card["engine"]
     assert all(g["controlAvailability"] == "DISABLED" for g in groups)
 
 
@@ -129,6 +130,11 @@ def test_demo_ml_models_fill_agent_centre(monkeypatch):
     not_trainable = {"O10", "O13", "O18", "O20"}
     for oid in trainable:
         assert cards[oid]["model"] == "Random Forest", oid
+        assert cards[oid]["engine"] == "Random Forest", oid
+    assert cards["O10"]["engine"] == "Enthalpy rules"
+    assert cards["O13"]["engine"] == "CO thresholds"
+    assert cards["O18"]["engine"] == "Training records"
+    assert cards["O20"]["engine"] == "Controls review"
     for oid in not_trainable:
         assert cards[oid]["model"] == "—", oid
     # Idempotent when registry already covered

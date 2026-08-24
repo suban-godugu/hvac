@@ -533,6 +533,7 @@ def agent_groups() -> List[Dict[str, Any]]:
                     "telemetry": tel_label,
                     "recommendation": rec.get("recommendation_status"),
                     "control": ctrl,
+                    "engine": spec.get("engine") or "—",
                     "model": _agent_centre_model(oid),
                     "kind": spec.get("kind") or "CONTROL",
                     "missing_features": ctx.get("missing_features") or [],

@@ -24,13 +24,14 @@ test.describe('Phase 2 control room', () => {
     expect(body).not.toMatch(/BMS LIVE/);
   });
 
-  test('agent center shows five groups, MODEL row, and CONTROL DISABLED', async ({ page }) => {
+  test('agent center shows five groups, ENGINE/MODEL rows, and CONTROL DISABLED', async ({ page }) => {
     await page.goto('/agents');
     await expect(page.locator('body')).toContainText('Scheduling');
     await expect(page.locator('body')).toContainText('Plant Control');
     await expect(page.locator('body')).toContainText('Ventilation');
     await expect(page.locator('body')).toContainText('Variable Speed');
     await expect(page.locator('body')).toContainText('Operations');
+    await expect(page.locator('body')).toContainText('ENGINE');
     await expect(page.locator('body')).toContainText('MODEL');
     await expect(page.locator('body')).toContainText('CONTROL');
     await expect(page.locator('body')).toContainText('DISABLED');

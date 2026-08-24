@@ -55,7 +55,7 @@ export default function AgentsPage() {
       <PageHeader
         icon={Users}
         title="Agent Control Center"
-        subtitle="Canonical telemetry and ML registry models. Demo and simulation keep CONTROL DISABLED — production BMS writes stay gated."
+        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Demo keeps CONTROL DISABLED — production BMS writes stay gated."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
@@ -80,6 +80,7 @@ export default function AgentsPage() {
               telemetry: string;
               recommendation: string;
               control: string;
+              engine?: string;
               model?: string;
               kind?: string;
             }[];
@@ -145,6 +146,10 @@ export default function AgentsPage() {
                         <div className="flex justify-between gap-2">
                           <span>RECOMMENDATION</span>
                           <span className="text-slate-200 text-right">{card.recommendation}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>ENGINE</span>
+                          <span className="text-slate-200 text-right">{card.engine || '—'}</span>
                         </div>
                         <div className="flex justify-between gap-2">
                           <span>MODEL</span>
