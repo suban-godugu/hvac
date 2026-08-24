@@ -43,7 +43,7 @@ export default function TelemetryPage() {
           {wsLabel}
         </StatusBadge>
         <StatusBadge tone={live.controlEnabled ? 'warn' : 'muted'} pulse={false}>
-          {live.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED'}
+          {live.controlLabel || (live.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED')}
         </StatusBadge>
       </div>
       {events.length === 0 ? (

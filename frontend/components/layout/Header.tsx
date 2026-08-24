@@ -76,6 +76,7 @@ export const Header: React.FC = () => {
         safeMode: Boolean(status.safeMode),
         plantMode: status.plantMode,
         controlEnabled: Boolean(status.controlEnabled),
+        controlLabel: String(status.controlLabel || (status.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED')),
         events: useLiveTelemetry.getState().events,
       },
       useLiveTelemetry.getState().connectionState
@@ -110,6 +111,7 @@ export const Header: React.FC = () => {
               safeMode: Boolean(body.safeMode),
               plantMode: String(body.plantMode),
               controlEnabled: Boolean(body.controlEnabled),
+              controlLabel: String(body.controlLabel || (body.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED')),
               events: useLiveTelemetry.getState().events,
             },
             useLiveTelemetry.getState().connectionState
@@ -235,7 +237,7 @@ export const Header: React.FC = () => {
               TEL {telemetryLabel} {ageText}
             </StatusBadge>
             <StatusBadge tone={live.controlEnabled ? 'live' : 'muted'} pulse={false}>
-              {live.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED'}
+              {live.controlLabel || (live.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED')}
             </StatusBadge>
           </div>
           <select

@@ -105,7 +105,10 @@ def test_all_agents_synthetic_ready_for_centre():
         assert card["telemetry"] == "SIMULATED"
         assert card["status"] == "READY"
         assert card["recommendation"] == "AVAILABLE"
-        assert card["control"] == "WRITE DISABLED"
+        if card["id"] in ("O9", "O17", "O18", "O19", "O20"):
+            assert card["control"] in ("ADVISORY", "MAINTENANCE", "REVIEW"), card["id"]
+        else:
+            assert card["control"] == "WRITE DISABLED"
         assert isinstance(card.get("model"), str)
         assert card["model"]  # registry label or em dash
         assert isinstance(card.get("engine"), str) and card["engine"]
@@ -177,13 +180,19 @@ def test_sim_writes_enable_agent_centre_control(monkeypatch):
     assert classified.get("code") == "SIM_DISPATCH_OK"
     groups = agent_groups()
     cards = [c for g in groups for c in g["cards"]]
-    assert all(c["control"] == "WRITE ENABLED" for c in cards)
+    assert all(c["control"] == "SIM WRITE ENABLED" for c in cards if c["id"] not in ("O9", "O17", "O18", "O19", "O20"))
+    cards_by_id = {c["id"]: c for c in cards}
+    assert cards_by_id["O9"]["control"] == "REVIEW"
+    assert cards_by_id["O17"]["control"] == "ADVISORY"
+    assert cards_by_id["O18"]["control"] == "ADVISORY"
+    assert cards_by_id["O19"]["control"] == "MAINTENANCE"
+    assert cards_by_id["O20"]["control"] == "REVIEW"
     assert all(isinstance(c.get("model"), str) and c["model"] for c in cards)
-    assert all(g["controlAvailability"] == "WRITE ENABLED" for g in groups)
-    # Ops kinds still never dispatch plant writes
+    assert all(g["controlAvailability"] == "SIM WRITE ENABLED" for g in groups)
+    # Ops / review kinds still never dispatch plant writes
     from backend.services.agent_recommendation_service import build_recommendation
 
-    for oid in ("O17", "O18", "O19", "O20"):
+    for oid in ("O9", "O17", "O18", "O19", "O20"):
         rec = build_recommendation(oid)
         assert rec["dispatch"]["allowed"] is False, oid
         assert catalog_for(oid).get("kind") in ("ADVISORY", "MAINTENANCE", "REVIEW")

@@ -34,6 +34,7 @@ type LiveState = {
   telemetrySource: string | null;
   safeMode: boolean;
   controlEnabled: boolean;
+  controlLabel: string;
   plantMode: 'DATASET' | 'LIVE_BMS' | null;
   lastUpdate: number | null;
   connectionState: WsConnectionState;
@@ -52,6 +53,7 @@ export const useLiveTelemetry = create<LiveState>((set, get) => ({
   telemetrySource: null,
   safeMode: false,
   controlEnabled: false,
+  controlLabel: 'WRITE DISABLED',
   plantMode: null,
   lastUpdate: null,
   connectionState: 'idle',
@@ -75,6 +77,7 @@ export const useLiveTelemetry = create<LiveState>((set, get) => ({
       telemetrySource: tel.source ? String(tel.source) : null,
       safeMode: Boolean(frame.safeMode),
       controlEnabled: Boolean(frame.controlEnabled),
+      controlLabel: String(frame.controlLabel || (frame.controlEnabled ? 'WRITE ENABLED' : 'WRITE DISABLED')),
       plantMode: frame.plantMode === 'LIVE_BMS' ? 'LIVE_BMS' : frame.plantMode === 'DATASET' ? 'DATASET' : get().plantMode,
       lastUpdate: Date.now(),
       events: Array.isArray(frame.events) ? frame.events : [],

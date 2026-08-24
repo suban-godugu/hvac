@@ -55,7 +55,16 @@ function LivePlant({
   plant,
   telStatus,
 }: {
-  plant?: { chillers?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[]; ahus?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[]; pumps?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[]; vfds?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[] };
+  plant?: {
+    chillers?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    ahus?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    pumps?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    vfds?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    condenser_water?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    hot_water?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    zones?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+    vavs?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
+  };
   telStatus?: string;
 }) {
   const groups = [
@@ -63,6 +72,10 @@ function LivePlant({
     { title: 'AHUs', rows: plant?.ahus || [] },
     { title: 'Pumps', rows: plant?.pumps || [] },
     { title: 'VFDs', rows: plant?.vfds || [] },
+    { title: 'Condenser water', rows: plant?.condenser_water || [] },
+    { title: 'Hot water', rows: plant?.hot_water || [] },
+    { title: 'Zones', rows: plant?.zones || [] },
+    { title: 'VAVs', rows: plant?.vavs || [] },
   ];
   const empty = groups.every((g) => g.rows.length === 0);
   return (
@@ -182,7 +195,7 @@ export default function FleetOverviewPage() {
     queryKey: ['bms-plant'],
     queryFn: async () => {
       const res = await fetch('/api/platform/bms/plant', { cache: 'no-store' });
-      if (!res.ok) return { chillers: [], ahus: [], pumps: [], vfds: [] };
+      if (!res.ok) return { chillers: [], ahus: [], pumps: [], vfds: [], condenser_water: [], hot_water: [], zones: [], vavs: [] };
       return res.json();
     },
     refetchInterval: LIVE_POLL_MS,

@@ -21,12 +21,15 @@ def simulated_writes_allowed() -> bool:
 
     if not is_simulation_mode() or is_safe_mode():
         return False
-    return os.getenv("HVAC_USE_SIMULATION", "0").strip() in ("1", "true", "TRUE")
+    if os.getenv("HVAC_USE_SIMULATION", "0").strip() not in ("1", "true", "TRUE"):
+        return False
+    # Align with SimulatorBMSGateway — sim writes need an explicit allow flag.
+    return os.getenv("HVAC_ALLOW_SIM_WRITES", "0").strip() in ("1", "true", "TRUE")
 
 
 def control_writes_status() -> str:
     if physical_writes_allowed():
-        return "WRITE ENABLED"
+        return "LIVE WRITE ENABLED"
     if simulated_writes_allowed():
         return "SIM WRITE ENABLED"
     return "WRITE DISABLED"

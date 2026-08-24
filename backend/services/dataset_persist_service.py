@@ -80,11 +80,15 @@ def _num(by_id: Dict[str, Dict[str, Any]], *keys: str) -> Optional[float]:
     return None
 
 
-def persist_dataset_modules(force: bool = False) -> int:
-    """Write latest SIMULATION points into scheduling/plant/vent/OM/VS/energy tables."""
+def persist_dataset_modules(force: bool = False, at: Optional[datetime] = None) -> int:
+    """Write latest SIMULATION points into scheduling/plant/vent/OM/VS/energy tables.
+
+    When ``at`` is set (history backfill), throttle is skipped and module rows
+    stamp that timestamp so O14–O16 / energy / zone charts get a real series.
+    """
     global _LAST_PERSIST
     now = time.time()
-    if not force and now - _LAST_PERSIST < 8.0:
+    if at is None and not force and now - _LAST_PERSIST < 8.0:
         return 0
     from backend.services.canonical_telemetry_service import latest_points
 
@@ -92,24 +96,26 @@ def persist_dataset_modules(force: bool = False) -> int:
     by_id = {str(p.get("point_id") or ""): p for p in points if p.get("point_id")}
     if not by_id:
         return 0
+    ts = at or _now()
     written = 0
-    written += _persist_plant_control(by_id)
-    written += _persist_ventilation(by_id)
-    written += _persist_om(by_id)
-    written += _persist_zones(by_id)
-    written += _persist_variable_speed(by_id)
-    written += _persist_energy(by_id)
+    written += _persist_plant_control(by_id, ts=ts)
+    written += _persist_ventilation(by_id, ts=ts)
+    written += _persist_om(by_id, ts=ts)
+    written += _persist_zones(by_id, ts=ts)
+    written += _persist_variable_speed(by_id, ts=ts)
+    written += _persist_energy(by_id, ts=ts)
     written += _persist_o1()
-    _LAST_PERSIST = now
+    if at is None:
+        _LAST_PERSIST = now
     return written
 
 
-def _persist_plant_control(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_plant_control(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models import PlantControlTelemetryDB
     from database.session import SessionLocal
     from backend.services.plant_control_telemetry_service import plant_control_telemetry_service
 
-    ts = _now()
+    stamp = ts or _now()
     n = 0
     db = SessionLocal()
     try:
@@ -119,7 +125,7 @@ def _persist_plant_control(by_id: Dict[str, Dict[str, Any]]) -> int:
                 continue
             db.add(
                 PlantControlTelemetryDB(
-                    timestamp=ts,
+                    timestamp=stamp,
                     opportunity_code=opp,
                     equipment_id=eq,
                     point_name=pid,
@@ -133,28 +139,42 @@ def _persist_plant_control(by_id: Dict[str, Dict[str, Any]]) -> int:
                 pid, eq, val, unit, quality="GOOD", source="SIMULATION"
             )
             n += 1
+        # Append one history tick per persist so /o5–/o9/history has a series.
+        time_label = stamp.strftime("%H:%M") if hasattr(stamp, "strftime") else str(stamp)
+        sp = _num(by_id, "AHU1.DuctStaticPressure") or 1.45
+        sp_sp = _num(by_id, "AHU1.StaticPressureSetpoint") or 1.4
+        plant_control_telemetry_service.buffer_history_entry(
+            "O5",
+            {"time": time_label, "static_pressure": round(sp, 3), "setpoint": round(sp_sp, 3)},
+        )
+        for opp, supply_key, sp_key in (
+            ("O6", "HHW.SupplyTemp", "HHW.SupplySetpoint"),
+            ("O7", "CHW.SupplyTemp", "CHW.SupplySetpoint"),
+            ("O8", "CWS.SupplyTemp", "CWS.SupplySetpoint"),
+        ):
+            supply = _num(by_id, supply_key)
+            setpoint = _num(by_id, sp_key)
+            if supply is None and setpoint is None:
+                continue
+            plant_control_telemetry_service.buffer_history_entry(
+                opp,
+                {
+                    "time": time_label,
+                    "supply_temp": None if supply is None else round(supply, 2),
+                    "setpoint": None if setpoint is None else round(setpoint, 2),
+                },
+            )
         sh = _num(by_id, "REF.EvaporatorSuperheat") or 6.2
-        if not plant_control_telemetry_service.get_history("O9", limit=1):
-            import math
-
-            for hour in range(24):
-                plant_control_telemetry_service.buffer_history_entry(
-                    "O9",
-                    {
-                        "time": f"{hour:02d}:00",
-                        "txv": round(sh + math.sin(hour / 3.0) * 1.8, 2),
-                        "exv": round(3.0 + math.sin(hour / 8.0) * 0.2, 2),
-                        "txv_superheat": round(sh + math.sin(hour / 3.0) * 1.8, 2),
-                        "setpoint": 3.0,
-                    },
-                )
-        if not plant_control_telemetry_service.get_history("O5", limit=1):
-            sp = _num(by_id, "AHU1.DuctStaticPressure") or 1.45
-            for hour in range(12):
-                plant_control_telemetry_service.buffer_history_entry(
-                    "O5",
-                    {"time": f"{hour:02d}:00", "static_pressure": round(sp + (hour % 3) * 0.04, 3), "setpoint": 1.4},
-                )
+        plant_control_telemetry_service.buffer_history_entry(
+            "O9",
+            {
+                "time": time_label,
+                "txv": round(sh, 2),
+                "exv": 3.0,
+                "txv_superheat": round(sh, 2),
+                "setpoint": 3.0,
+            },
+        )
         db.commit()
     except Exception:
         db.rollback()
@@ -164,7 +184,7 @@ def _persist_plant_control(by_id: Dict[str, Dict[str, Any]]) -> int:
     return n
 
 
-def _persist_ventilation(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_ventilation(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models_ventilation import HvacTelemetryDB
     from database.session import SessionLocal
 
@@ -181,11 +201,12 @@ def _persist_ventilation(by_id: Dict[str, Dict[str, Any]]) -> int:
     occ = _num(by_id, "ZONE.OccupantCount", "ZONE-01.occupancy")
     fan_kw = _num(by_id, "AHU-01.SupplyFanPower")
     ch_kw = _num(by_id, "CHILLER1.CompressorPower")
+    stamp = ts or _now()
     db = SessionLocal()
     try:
         db.add(
             HvacTelemetryDB(
-                timestamp=_now(),
+                timestamp=stamp,
                 site_id="SKYLINE-BLR",
                 ahu_id="AHU-01",
                 zone_id="ZONE-01",
@@ -221,7 +242,7 @@ def _persist_ventilation(by_id: Dict[str, Dict[str, Any]]) -> int:
         db.close()
 
 
-def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_om(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models_om import OmTelemetryDB
     from database.session import SessionLocal
     from backend.services.operations_maintenance_opportunity_service import (
@@ -234,7 +255,7 @@ def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
     hvac_kw = _num(by_id, "CHILLER1.CompressorPower", "AHU-01.SupplyFanPower") or 428.5
     oat = _num(by_id, "WEATHER.OutdoorDryBulb", "SITE.outdoor_air_temperature")
     occ = _num(by_id, "ZONE.OccupantCount")
-    ts = _now()
+    stamp = ts or _now()
     db = SessionLocal()
     try:
         _ensure_om_catalog(db)
@@ -243,7 +264,7 @@ def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
             db.add(
                 OmTelemetryDB(
                     opportunity_id=oid,
-                    timestamp=ts,
+                    timestamp=stamp,
                     source="SIMULATION",
                     quality="GOOD",
                     electrical_power_kw=512.0 if oid == "O17" else None,
@@ -269,19 +290,19 @@ def _persist_om(by_id: Dict[str, Dict[str, Any]]) -> int:
         db.close()
 
 
-def _persist_zones(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_zones(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models import ZoneTelemetryDB
     from database.session import SessionLocal
 
     drift = (_num(by_id, "ZONE-01.zone_temperature", "ZONE.AvgTemp") or 22.8) - 22.8
-    ts = _now()
+    stamp = ts or _now()
     db = SessionLocal()
     n = 0
     try:
         for z in DATASET_ZONES:
             db.add(
                 ZoneTelemetryDB(
-                    timestamp=ts,
+                    timestamp=stamp,
                     zone_id=z["id"],
                     actual_temperature=round(z["temp"] + drift, 2),
                     current_setpoint=z["setpoint"],
@@ -307,11 +328,11 @@ def _persist_zones(by_id: Dict[str, Dict[str, Any]]) -> int:
     return n
 
 
-def _persist_variable_speed(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_variable_speed(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models_vs import VariableSpeedTelemetryDB
     from database.session import SessionLocal
 
-    ts = _now()
+    stamp = ts or _now()
     rows = [
         ("P-01", "SCHW.Speed", "speed", _num(by_id, "SCHW.Speed", "P-01.speed"), "%", "O14"),
         ("P-01", "SCHW.Flow", "flow", _num(by_id, "SCHW.Flow", "P-01.flow"), "L/s", "O14"),
@@ -328,7 +349,7 @@ def _persist_variable_speed(by_id: Dict[str, Dict[str, Any]]) -> int:
                 continue
             db.add(
                 VariableSpeedTelemetryDB(
-                    timestamp=ts,
+                    timestamp=stamp,
                     equipment_id=eq,
                     point_id=pid,
                     point_name=name,
@@ -349,14 +370,14 @@ def _persist_variable_speed(by_id: Dict[str, Dict[str, Any]]) -> int:
     return n
 
 
-def _persist_energy(by_id: Dict[str, Dict[str, Any]]) -> int:
+def _persist_energy(by_id: Dict[str, Dict[str, Any]], ts: Optional[datetime] = None) -> int:
     from database.models_energy_ops import EnergyTelemetryDB
     from database.session import SessionLocal
 
     ch = _num(by_id, "CHILLER1.CompressorPower") or 40.8
     fans = _num(by_id, "AHU-01.SupplyFanPower") or 8.4
     pumps = _num(by_id, "SCHW.Power") or 11.0
-    ts = _now()
+    stamp = ts or _now()
     db = SessionLocal()
     try:
         for meter, cat, kw in (
@@ -367,7 +388,7 @@ def _persist_energy(by_id: Dict[str, Dict[str, Any]]) -> int:
         ):
             db.add(
                 EnergyTelemetryDB(
-                    timestamp=ts,
+                    timestamp=stamp,
                     meter_id=meter,
                     category=cat,
                     power_kw=kw,

@@ -161,8 +161,8 @@ CATALOG: Dict[str, Dict[str, Any]] = {
         "recommended_point": "status",
         "recommended_equipment": "CH-01",
         "unit": "°C",
-        "control": True,
-        "kind": "CONTROL",
+        "control": False,
+        "kind": "REVIEW",
     },
     "O10": {
         "title": "Economy Cycle",

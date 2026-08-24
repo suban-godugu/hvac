@@ -5,7 +5,12 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
-from backend.bms.command_writer import physical_writes_allowed, simulated_writes_allowed, write_enabled_flag
+from backend.bms.command_writer import (
+    control_writes_status,
+    physical_writes_allowed,
+    simulated_writes_allowed,
+    write_enabled_flag,
+)
 from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
 from backend.bms.point_mapper import canonical_catalog, mapping_to_dict
 from backend.services.canonical_telemetry_service import latest_points
@@ -41,16 +46,18 @@ def _agent_centre_model(opportunity_id: str, *, engine: Optional[str] = None) ->
     return eng if eng else "—"
 
 
-def _agent_centre_control(*, catalog_control: bool) -> str:
-    """Agent Centre write badge when sim or live writes are armed.
+def _agent_centre_control(*, catalog_control: bool, kind: Optional[str] = None) -> str:
+    """Honest write / posture badge for Agent Centre cards.
 
-    Catalog `control` still gates real dispatch elsewhere; O17–O20 stay
-    ADVISORY/MAINTENANCE/REVIEW and never plant-write.
+    ADVISORY / MAINTENANCE / REVIEW never claim plant writes are armed.
+    Sim vs live physical writes use distinct labels.
     """
-    _ = catalog_control
-    if physical_writes_allowed() or simulated_writes_allowed():
-        return "WRITE ENABLED"
-    return "WRITE DISABLED"
+    k = (kind or ("CONTROL" if catalog_control else "ADVISORY")).strip().upper()
+    if k in ("ADVISORY", "MAINTENANCE", "REVIEW"):
+        return k
+    from backend.bms.command_writer import control_writes_status
+
+    return control_writes_status()
 
 
 def _building() -> Optional[Dict[str, Any]]:
@@ -208,6 +215,7 @@ def platform_snapshot() -> Dict[str, Any]:
         "telemetry": tel,
         "telemetryAgeSeconds": tel.get("ageSeconds"),
         "controlEnabled": control,
+        "controlLabel": control_writes_status(),
         "writeEnabled": (write_enabled_flag() and physical_writes_allowed()) or simulated_writes_allowed(),
         "mode": mode_s,
         "safety": "SAFE_HOLD" if safe else "PASS",
@@ -454,7 +462,16 @@ def plant_overview() -> Dict[str, List[Dict[str, Any]]]:
     rows = _synthetic_plant_rows() if (_use_simulation_flag() and is_simulation_mode()) else mapped_telemetry()
     if not rows and is_simulation_mode():
         rows = _synthetic_plant_rows()
-    groups: Dict[str, Dict[str, Dict[str, Any]]] = {"chillers": {}, "ahus": {}, "pumps": {}, "vfds": {}}
+    groups: Dict[str, Dict[str, Dict[str, Any]]] = {
+        "chillers": {},
+        "ahus": {},
+        "pumps": {},
+        "vfds": {},
+        "condenser_water": {},
+        "hot_water": {},
+        "zones": {},
+        "vavs": {},
+    }
     for r in rows:
         eid = str(r.get("equipment_id") or "")
         eu = eid.upper()
@@ -466,6 +483,14 @@ def plant_overview() -> Dict[str, List[Dict[str, Any]]]:
             bucket = "pumps"
         elif eu.startswith("VFD"):
             bucket = "vfds"
+        elif eu.startswith("CW") or eu.startswith("CT") or eu.startswith("CWP"):
+            bucket = "condenser_water"
+        elif eu.startswith("HHW") or eu.startswith("BOILER") or eu.startswith("HW"):
+            bucket = "hot_water"
+        elif eu.startswith("ZONE"):
+            bucket = "zones"
+        elif eu.startswith("VAV"):
+            bucket = "vavs"
         else:
             continue
         groups[bucket].setdefault(eid, {"equipment_id": eid, "points": {}})
@@ -533,7 +558,10 @@ def agent_groups() -> List[Dict[str, Any]]:
                 tel_label = "NO DATA"
             sources.append(tel_label)
             spec = catalog_for(oid)
-            ctrl = _agent_centre_control(catalog_control=bool(spec.get("control")))
+            ctrl = _agent_centre_control(
+                catalog_control=bool(spec.get("control")),
+                kind=str(spec.get("kind") or "CONTROL"),
+            )
             engine = spec.get("engine") or "—"
             cards.append(
                 {
@@ -557,11 +585,8 @@ def agent_groups() -> List[Dict[str, Any]]:
             row["status"] = "READY"
         else:
             row["status"] = "HOLD"
-        row["controlAvailability"] = (
-            "WRITE ENABLED"
-            if any("ENABLED" in str(c.get("control") or "").upper() for c in cards)
-            else "WRITE DISABLED"
-        )
+        row["controlAvailability"] = control_writes_status()
+
         row["bms"] = snap["bms"]["status"]
         row["telemetry"] = sources[0] if sources else "NO DATA"
         row["recommendation"] = "AVAILABLE" if any(r == "AVAILABLE" for r in recs) else "UNAVAILABLE"

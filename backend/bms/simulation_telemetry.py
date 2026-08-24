@@ -312,11 +312,25 @@ def seed_synthetic_history(hours: float = 2.0, step_minutes: float = 15.0) -> in
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     steps = max(2, int((hours * 60.0) / step))
     total = 0
+    try:
+        from backend.services.dataset_persist_service import persist_dataset_modules
+    except Exception:
+        persist_dataset_modules = None  # type: ignore
     for i in range(steps, 0, -1):
         ts = now - timedelta(minutes=step * i)
         tick = time.time() - (step * 60.0 * i)
         total += publish_once(timestamp=ts, tick=tick)
+        if persist_dataset_modules is not None:
+            try:
+                persist_dataset_modules(force=True, at=ts)
+            except Exception:
+                pass
     total += publish_once(timestamp=now)
+    if persist_dataset_modules is not None:
+        try:
+            persist_dataset_modules(force=True, at=now)
+        except Exception:
+            pass
     _HISTORY_SEEDED = True
     return total
 
@@ -331,10 +345,27 @@ def _dataset_has_simulation() -> bool:
         return False
 
 
+def _module_series_thin() -> bool:
+    """True when VS/energy historians lack a multi-point series (needs backfill)."""
+    try:
+        from database.session import SessionLocal
+        from database.models_vs import VariableSpeedTelemetryDB
+
+        db = SessionLocal()
+        try:
+            return db.query(VariableSpeedTelemetryDB).count() < 8
+        finally:
+            db.close()
+    except Exception:
+        return True
+
+
 def ensure_synthetic_plant() -> int:
     """Keep the synthetic plant in SQLite. Reuse existing dataset rows when present."""
     global _HISTORY_SEEDED
-    if _HISTORY_SEEDED or _dataset_has_simulation():
+    if _HISTORY_SEEDED:
+        return publish_once()
+    if _dataset_has_simulation() and not _module_series_thin():
         _HISTORY_SEEDED = True
         return publish_once()
     return seed_synthetic_history()

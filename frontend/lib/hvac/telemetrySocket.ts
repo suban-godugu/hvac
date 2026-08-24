@@ -26,6 +26,7 @@ export type TelemetryFrame = {
   telemetry?: { status?: string; ageSeconds?: number | null; quality?: string | null; source?: string | null };
   safeMode?: boolean;
   controlEnabled?: boolean;
+  controlLabel?: string;
   mode?: string;
   plantMode?: string | null;
   events?: TelemetryEvent[];

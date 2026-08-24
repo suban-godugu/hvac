@@ -72,6 +72,65 @@ class PlantControlService:
         """Returns live O9 Electronic Expansion Valve Retrofit Assessment."""
         return stamp_plant_provenance(self.agent.o9.evaluate_retrofit_feasibility(), "O9")
 
+    def get_o5_history(self) -> List[Dict[str, Any]]:
+        return self._opportunity_history("O5")
+
+    def get_o6_history(self) -> List[Dict[str, Any]]:
+        return self._opportunity_history("O6")
+
+    def get_o7_history(self) -> List[Dict[str, Any]]:
+        return self._opportunity_history("O7")
+
+    def get_o8_history(self) -> List[Dict[str, Any]]:
+        return self._opportunity_history("O8")
+
+    def get_o9_history(self) -> List[Dict[str, Any]]:
+        return self._opportunity_history("O9")
+
+    def _opportunity_history(self, opportunity: str, limit: int = 48) -> List[Dict[str, Any]]:
+        """Prefer in-memory buffer; fall back to PlantControlTelemetryDB series."""
+        buf = self.telemetry.get_history(opportunity, limit=limit)
+        if len(buf) >= 2:
+            return buf
+        db_rows = self._history_from_db(opportunity, limit=limit)
+        return db_rows or buf
+
+    def _history_from_db(self, opportunity: str, limit: int = 48) -> List[Dict[str, Any]]:
+        db = SessionLocal()
+        try:
+            rows = (
+                db.query(PlantControlTelemetryDB)
+                .filter(PlantControlTelemetryDB.opportunity_code == opportunity)
+                .order_by(PlantControlTelemetryDB.timestamp.asc())
+                .limit(max(limit * 6, 48))
+                .all()
+            )
+            if not rows:
+                return []
+            by_ts: Dict[str, Dict[str, Any]] = {}
+            for r in rows:
+                ts = r.timestamp.isoformat() if hasattr(r.timestamp, "isoformat") else str(r.timestamp)
+                label = r.timestamp.strftime("%H:%M") if hasattr(r.timestamp, "strftime") else ts
+                slot = by_ts.setdefault(ts, {"time": label})
+                name = str(r.point_name or "")
+                val = r.value
+                if "StaticPressure" in name and "Setpoint" not in name:
+                    slot["static_pressure"] = val
+                elif "StaticPressureSetpoint" in name or name.endswith("SupplySetpoint"):
+                    slot["setpoint"] = val
+                elif "SupplyTemp" in name:
+                    slot["supply_temp"] = val
+                elif "Superheat" in name:
+                    slot["txv_superheat"] = val
+                    slot["txv"] = val
+                elif "SuctionTemp" in name:
+                    slot["suction_temp"] = val
+            return list(by_ts.values())[-limit:]
+        except Exception:
+            return []
+        finally:
+            db.close()
+
     def get_activity_log(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Returns recent activity logs for Plant Control Parameter Optimizations."""
         self.ensure_demo_activity()

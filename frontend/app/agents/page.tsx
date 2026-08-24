@@ -30,8 +30,15 @@ function telDot(label?: string) {
 
 function controlLabel(raw?: string | null) {
   const v = String(raw || '').trim().toUpperCase();
+  if (v === 'SIM WRITE ENABLED' || v === 'SIM_WRITE_ENABLED') return 'SIM WRITE ENABLED';
+  if (v === 'LIVE WRITE ENABLED' || v === 'LIVE_WRITE_ENABLED') return 'LIVE WRITE ENABLED';
   if (v.includes('ENABLED') && !v.includes('DISABLED')) return 'WRITE ENABLED';
+  if (v === 'ADVISORY' || v === 'MAINTENANCE' || v === 'REVIEW') return v;
   return 'WRITE DISABLED';
+}
+
+function controlArmed(label: string) {
+  return label.includes('ENABLED') && !label.includes('DISABLED');
 }
 
 export default function AgentsPage() {
@@ -42,26 +49,30 @@ export default function AgentsPage() {
     refetchInterval: PLATFORM_POLL_MS,
   });
   const groups = data?.groups || [];
-  const pageControl = groups.some(
-    (g: { controlAvailability?: string; cards?: { control?: string }[] }) =>
-      controlLabel(g.controlAvailability) === 'WRITE ENABLED' ||
-      (g.cards || []).some((c) => controlLabel(c.control) === 'WRITE ENABLED')
-  )
-    ? 'WRITE ENABLED'
-    : 'WRITE DISABLED';
+  const pageControl = (() => {
+    for (const g of groups as { controlAvailability?: string; cards?: { control?: string }[] }[]) {
+      const ga = controlLabel(g.controlAvailability);
+      if (controlArmed(ga)) return ga;
+      for (const c of g.cards || []) {
+        const cl = controlLabel(c.control);
+        if (controlArmed(cl)) return cl;
+      }
+    }
+    return 'WRITE DISABLED';
+  })();
 
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
         icon={Users}
         title="Agent Control Center"
-        subtitle="ENGINE is the decision method; MODEL is the ML registry label. Simulation allows WRITE ENABLED on the synthetic plant only — live BMS writes stay gated."
+        subtitle="ENGINE is the decision method; MODEL is the ML registry label. SIM WRITE ENABLED is synthetic-plant only — live BMS stays gated. O9 / O17–O20 show REVIEW / ADVISORY / MAINTENANCE, not writes."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone={toneForStatus(live.bmsStatus)}>BMS {live.bmsStatus}</StatusBadge>
         <StatusBadge tone={toneForStatus(live.telemetryStatus)}>TELEMETRY {live.telemetryStatus}</StatusBadge>
-        <StatusBadge tone={pageControl === 'WRITE ENABLED' ? 'live' : 'muted'} pulse={false}>
+        <StatusBadge tone={controlArmed(pageControl) ? 'live' : 'muted'} pulse={false}>
           {pageControl}
         </StatusBadge>
       </div>
@@ -98,7 +109,7 @@ export default function AgentsPage() {
                   <StatusBadge tone="muted" pulse={false}>
                     REC {g.recommendation || 'UNAVAILABLE'}
                   </StatusBadge>
-                  <StatusBadge tone={groupControl === 'WRITE ENABLED' ? 'live' : 'muted'} pulse={false}>
+                  <StatusBadge tone={controlArmed(groupControl) ? 'live' : 'muted'} pulse={false}>
                     {groupControl}
                   </StatusBadge>
                 </div>
