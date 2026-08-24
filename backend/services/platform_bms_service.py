@@ -24,18 +24,21 @@ def _format_registry_model_label(raw: Optional[str]) -> str:
     return " ".join(spaced.split()) or "—"
 
 
-def _agent_centre_model(opportunity_id: str) -> str:
-    """Algorithm from ML registry only. Missing / not ready → em dash."""
+def _agent_centre_model(opportunity_id: str, *, engine: Optional[str] = None) -> str:
+    """ML registry algorithm when ready; otherwise the agent ENGINE label (no empty dash)."""
     try:
         from backend.ml.prediction.service import model_status
 
         st = model_status(opportunity_id)
     except Exception:
-        return "—"
-    if st.get("status") != "MODEL_READY":
-        return "—"
-    model = st.get("model") or {}
-    return _format_registry_model_label(model.get("model_type"))
+        st = {"status": "MODEL_NOT_AVAILABLE"}
+    if st.get("status") == "MODEL_READY":
+        model = st.get("model") or {}
+        label = _format_registry_model_label(model.get("model_type"))
+        if label != "—":
+            return label
+    eng = (engine or "").strip()
+    return eng if eng else "—"
 
 
 def _agent_centre_control(*, catalog_control: bool) -> str:
@@ -526,6 +529,7 @@ def agent_groups() -> List[Dict[str, Any]]:
             sources.append(tel_label)
             spec = catalog_for(oid)
             ctrl = _agent_centre_control(catalog_control=bool(spec.get("control")))
+            engine = spec.get("engine") or "—"
             cards.append(
                 {
                     "id": oid,
@@ -533,8 +537,8 @@ def agent_groups() -> List[Dict[str, Any]]:
                     "telemetry": tel_label,
                     "recommendation": rec.get("recommendation_status"),
                     "control": ctrl,
-                    "engine": spec.get("engine") or "—",
-                    "model": _agent_centre_model(oid),
+                    "engine": engine,
+                    "model": _agent_centre_model(oid, engine=engine),
                     "kind": spec.get("kind") or "CONTROL",
                     "missing_features": ctx.get("missing_features") or [],
                 }

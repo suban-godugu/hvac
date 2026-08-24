@@ -136,7 +136,7 @@ def test_demo_ml_models_fill_agent_centre(monkeypatch):
     assert cards["O18"]["engine"] == "Training records"
     assert cards["O20"]["engine"] == "Controls review"
     for oid in not_trainable:
-        assert cards[oid]["model"] == "—", oid
+        assert cards[oid]["model"] == cards[oid]["engine"], oid
     # Idempotent when registry already covered
     assert ensure_demo_ml_models(force=True) == 0
 
