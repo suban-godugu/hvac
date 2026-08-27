@@ -17,7 +17,7 @@ interface KpiItem {
 export const KPIGrid: React.FC<{ items: KpiItem[]; emptyText?: string; className?: string }> = ({
   items,
   emptyText = 'AWAITING TELEMETRY',
-  className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3',
+  className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4',
 }) => (
   <div className={className}>
     {items.map((kpi) => {
@@ -26,19 +26,23 @@ export const KPIGrid: React.FC<{ items: KpiItem[]; emptyText?: string; className
       return (
         <div key={kpi.label} className="kpi-tile">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-[0.14em]">{kpi.label}</span>
-            {Icon && <Icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+            <span className="text-[11px] font-semibold text-slate-500 tracking-wide">{kpi.label}</span>
+            {Icon ? (
+              <span className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-500 shrink-0">
+                <Icon className="w-4 h-4" />
+              </span>
+            ) : null}
           </div>
           <div
-            className={`mt-2 text-[1.55rem] font-semibold font-mono tracking-tight leading-none ${
-              missing ? 'text-amber-200/90 text-sm' : 'text-slate-50'
+            className={`mt-3 min-h-[1.7rem] text-[1.65rem] font-bold tracking-tight leading-none ${
+              missing ? 'text-amber-600 text-sm font-semibold' : 'text-slate-900'
             }`}
           >
             {missing ? emptyText : kpi.value}
           </div>
           <div className="text-[11px] text-slate-500 mt-2 truncate">{missing ? '' : kpi.detail || kpi.unit || ''}</div>
           {!missing && (kpi.status || kpi.source || kpi.quality) ? (
-            <div className="text-[10px] font-mono text-slate-600 mt-1 truncate">
+            <div className="text-[10px] font-mono text-slate-400 mt-1 truncate">
               {[kpi.status, kpi.quality, kpi.source].filter(Boolean).join(' · ')}
             </div>
           ) : null}

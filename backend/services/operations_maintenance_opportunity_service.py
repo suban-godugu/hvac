@@ -103,7 +103,7 @@ def _ensure_om_catalog(db) -> None:
 
 
 def _ensure_om_side_tables(db) -> None:
-    """Training / WO / controller rows. Independent of om_telemetry so Vercel hydrate still fills O20."""
+    """Training / WO / controller rows. Independent of om_telemetry so hosted-demo hydrate still fills O20."""
     ts = _now()
     if not db.query(TrainingProgramDB).first():
         db.add(TrainingProgramDB(id="TRN-SAT-RESET", topic="SAT reset", program_name="Approved SAT reset strategy", required=True, status="ACTIVE"))

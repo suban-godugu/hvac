@@ -37,7 +37,7 @@ def get(url: str) -> tuple[int, dict | str]:
 def main() -> int:
     origin = (sys.argv[1] if len(sys.argv) > 1 else os.getenv("HVAC_API_ORIGIN") or "").rstrip("/")
     if not origin:
-        print("Usage: python scripts/smoke_demo.py https://<space>.hf.space")
+        print("Usage: python scripts/smoke_demo.py https://<hvac-api>.onrender.com")
         return 2
     failed = 0
     code, health = get(f"{origin}/healthz")

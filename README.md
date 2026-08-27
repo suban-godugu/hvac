@@ -15,7 +15,7 @@ Simulation and live BMS writes are strictly separated. Missing telemetry is show
 
 There is **no application login**. Opening `/` redirects to `/overview`. Production access is network and infrastructure, not JWT or sessions.
 
-**Demo:** API snapshot on Hugging Face ([subhan07/hvac-agents](https://huggingface.co/subhan07/hvac-agents)). A **Docker Space** needs Hugging Face PRO (`python scripts/sync_hf_space.py --space`). Until then the live API is [hvac-two-kappa.vercel.app](https://hvac-two-kappa.vercel.app) (simulation, writes off). UI: [frontend-omega-five-11.vercel.app](https://frontend-omega-five-11.vercel.app).
+**Demo:** API on **Render**, UI on **Netlify**. Hugging Face holds an API snapshot ([subhan07/hvac-agents](https://huggingface.co/subhan07/hvac-agents)); a Docker Space needs Hugging Face PRO.
 
 ---
 
@@ -179,27 +179,32 @@ Set `HVAC_START_CONTROL_WORKER=0` on the API process if you run the control loop
 
 ## Demo deploy (Phase 2)
 
-Hugging Face Docker Spaces require PRO. The API image is published as a model repo:
+Live demo is **Render (API) + Netlify (UI)**. Simulation BMS, production writes off (`HVAC_BMS_WRITE_ENABLED=0`). Hugging Face Docker Spaces still need PRO; `python scripts/sync_hf_space.py` publishes an API snapshot.
+
+### Render — FastAPI
+
+From the [Render dashboard](https://dashboard.render.com) create a Blueprint from this repo (`render.yaml`). Service name: `hvac-api`. Health check: `/healthz`. Render sets `PORT`; the Docker image reads it.
+
+Or:
 
 ```bash
-python scripts/sync_hf_space.py
-# after PRO:
-python scripts/sync_hf_space.py --space
+# after `render login`
+render blueprint launch
 ```
 
-Until a Docker Space is available, the live FastAPI demo is on Vercel (`https://hvac-two-kappa.vercel.app`) with `HVAC_BMS_MODE=simulation` and **simulator-only** control (`SIM WRITE ENABLED`). Production BMS writes stay off.
+### Netlify — Next.js
 
-Frontend:
+Import the GitHub repo in [Netlify](https://app.netlify.com). `netlify.toml` sets `base = frontend` and `@netlify/plugin-nextjs`. After the API URL is known, set:
 
-```bash
-cd frontend
-npx vercel --prod --yes --project frontend
+```
+HVAC_API_ORIGIN=https://<hvac-api>.onrender.com
+NEXT_PUBLIC_API_URL=https://<hvac-api>.onrender.com/api
 ```
 
-Set `HVAC_API_ORIGIN` and `NEXT_PUBLIC_API_URL` to the API host. Smoke:
+Then trigger a new UI deploy so `NEXT_PUBLIC_*` is baked in. Copy `frontend/.env.netlify.example`. Smoke:
 
 ```bash
-python scripts/smoke_demo.py https://hvac-two-kappa.vercel.app
+python scripts/smoke_demo.py https://<hvac-api>.onrender.com
 ```
 
 ---
@@ -230,6 +235,7 @@ Copy [`.env.example`](.env.example). Important variables:
 | `HVAC_ENV` | `development` | `production` tightens CORS and DB create-all |
 | `HVAC_DEPLOYMENT_MODE` | `local` | Marks local / demo vs production deployment |
 | `HVAC_CORS_ORIGINS` | `http://localhost:3000,...` | Allowed UI origins |
+| `HVAC_CORS_ORIGIN_REGEX` | empty locally | Hosted UI hosts (`*.netlify.app`) |
 | `HVAC_BMS_MODE` | `simulation` | `simulation` or `production` |
 | `HVAC_BMS_PROTOCOL` | `bacnet` | `bacnet` / `mqtt` / `rest` / `modbus` |
 | `HVAC_BMS_WRITE_ENABLED` | `0` | Master write switch |

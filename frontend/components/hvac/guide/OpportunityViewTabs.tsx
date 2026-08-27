@@ -36,8 +36,8 @@ export function OpportunityViewTabs({
         type="button"
         role="tab"
         aria-selected={on}
-        className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded-md border transition-colors ${
-          on ? 'text-slate-100' : 'text-slate-500 border-transparent hover:text-slate-300'
+        className={`px-3.5 py-1.5 text-[11px] font-semibold tracking-wide rounded-full border transition-colors ${
+          on ? 'text-slate-900' : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50'
         }`}
         style={on ? { borderColor: color, color, background: `${color}18` } : undefined}
         onClick={() => onChange(id)}

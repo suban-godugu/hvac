@@ -1,9 +1,15 @@
+function publicApiBase(): string | undefined {
+  const pub = process.env['NEXT_PUBLIC_API_URL'];
+  if (pub && /^https?:/i.test(pub)) return pub.replace(/\/$/, '');
+  return undefined;
+}
+
 export const API_BASE =
-  process.env['NEXT_PUBLIC_API_URL'] ||
+  publicApiBase() ||
   (typeof window !== 'undefined'
     ? '/api'
     : process.env['HVAC_API_ORIGIN']
-      ? `${process.env['HVAC_API_ORIGIN']}/api`
+      ? `${process.env['HVAC_API_ORIGIN'].replace(/\/$/, '')}/api`
       : 'http://localhost:8000/api');
 
 export class ApiError extends Error {
@@ -55,13 +61,17 @@ export async function hvacFetch(input: string, init: RequestInit = {}): Promise<
   throw lastErr instanceof Error ? lastErr : new Error("NETWORK ERROR");
 }
 
-/** Same-origin `/api` in the browser (Next rewrite); API_BASE for SSR. */
+/** Browser uses NEXT_PUBLIC_API_URL when set (Render); otherwise same-origin `/api`. */
 export async function apiJson(path: string, init: RequestInit = {}) {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  const direct = publicApiBase();
   const url = path.startsWith("http")
     ? path
-    : typeof window !== "undefined"
-      ? `/api${path.startsWith("/") ? path : `/${path}`}`
-      : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+    : direct
+      ? `${direct}${suffix}`
+      : typeof window !== "undefined"
+        ? `/api${suffix}`
+        : `${API_BASE}${suffix}`;
   const res = await hvacFetch(url, { ...init, cache: init.cache ?? "no-store" });
   if (!res.ok) {
     let message = `DATA SOURCE ERROR ${res.status}`;

@@ -52,16 +52,18 @@ export const OpportunityHeader: React.FC<OpportunityHeaderProps> = ({
       <StudioBreadcrumb def={def} />
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mt-3">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-cyan-400/80 mb-1.5">
+          <div className="text-[10px] uppercase tracking-[0.16em] font-semibold text-violet-600 mb-1.5">
             OEH / AIRAH · GUIDE_POTENTIAL is not measured LIVE kW
           </div>
-          <h1 className="text-[1.7rem] font-semibold text-white tracking-tight leading-tight">
+          <h1 className="text-[1.7rem] font-bold text-slate-900 tracking-tight leading-tight">
             {code} · {def.title}
             {page ? ` · p.${page}` : ''}
           </h1>
-          <p className="text-[13px] text-slate-400 mt-1.5 max-w-3xl leading-relaxed">{def.description}</p>
+          <p className="text-[13px] text-slate-500 mt-1.5 max-w-3xl leading-relaxed">{def.description}</p>
           <div className="flex flex-wrap gap-1.5 mt-3.5">
-            <StatusBadge tone={toneForStatus(live)}>Telemetry {live || 'NO DATA'}</StatusBadge>
+            <StatusBadge tone={toneForStatus(live)} pulse={live === 'LIVE'}>
+              Telemetry {live || 'NO DATA'}
+            </StatusBadge>
             {guideBadge ? (
               <StatusBadge tone="neutral" pulse={false}>
                 {guideBadge}
@@ -85,7 +87,11 @@ export const OpportunityHeader: React.FC<OpportunityHeaderProps> = ({
                 {model}
               </StatusBadge>
             )}
-            {bms && <StatusBadge tone={toneForStatus(bms)}>{bms}</StatusBadge>}
+            {bms && (
+              <StatusBadge tone={toneForStatus(bms)} pulse={false}>
+                {bms}
+              </StatusBadge>
+            )}
           </div>
         </div>
         {writeActions && <div className="flex flex-wrap gap-2 shrink-0">{writeActions}</div>}

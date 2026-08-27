@@ -1,16 +1,50 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, LayoutDashboard, Server, ShieldCheck, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
-import { OpportunityCard } from '@/components/hvac/OpportunityCard';
 import { AlertRail, AssetRail, AssetRailEmpty, KpiRow, PlantCanvas, SystemsHub } from '@/components/hvac/bms-home';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
 import { getOpportunity } from '@/lib/hvac/opportunityConfig';
 import type { DashboardHome, DashboardOpportunity, PlantEquipment } from '@/lib/hvac/dashboardHome';
+
+function EnergySparkline({ points, unit }: { points: { t?: string; v?: number }[]; unit?: string }) {
+  if (!points.length) {
+    return <p className="text-[12px] text-slate-500 mt-4">AWAITING TELEMETRY — no energy series yet.</p>;
+  }
+  const vals = points.map((p) => Number(p.v)).filter((n) => Number.isFinite(n));
+  const max = Math.max(...vals, 1);
+  const min = Math.min(...vals, 0);
+  const span = Math.max(max - min, 1);
+  const w = 320;
+  const h = 120;
+  const path = vals
+    .map((v, i) => {
+      const x = (i / Math.max(vals.length - 1, 1)) * w;
+      const y = h - ((v - min) / span) * (h - 8) - 4;
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const last = vals[vals.length - 1];
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <div className="text-[1.35rem] font-bold text-slate-900 tabular-nums">
+          {last.toFixed(1)} <span className="text-[12px] font-semibold text-slate-400">{unit || 'kW'}</span>
+        </div>
+        <span className="text-[10px] font-mono text-slate-400">{vals.length} pts</span>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]" preserveAspectRatio="none" role="img" aria-label="Energy series">
+        <path d={path} fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
 
 export default function FleetOverviewPage() {
   const home = useQuery({
@@ -26,7 +60,7 @@ export default function FleetOverviewPage() {
   const layers = data?.layers;
   const allOpps: DashboardOpportunity[] = useMemo(
     () => (data?.chapters || []).flatMap((c) => c.opportunities),
-    [data?.chapters]
+    [data?.chapters],
   );
   const firstRow = useMemo(() => {
     for (const rows of Object.values(layers || {})) {
@@ -50,8 +84,12 @@ export default function FleetOverviewPage() {
         badge={tel}
         actions={
           <div className="flex flex-wrap gap-2">
-            <StatusBadge tone={toneForStatus(data?.bms?.status)}>BMS {data?.bms?.status || 'DISCONNECTED'}</StatusBadge>
-            <StatusBadge tone={toneForStatus(tel)}>TEL {tel}</StatusBadge>
+            <StatusBadge tone={toneForStatus(data?.bms?.status)} pulse={false}>
+              BMS {data?.bms?.status || 'DISCONNECTED'}
+            </StatusBadge>
+            <StatusBadge tone={toneForStatus(tel)} pulse={tel === 'LIVE'}>
+              TEL {tel}
+            </StatusBadge>
           </div>
         }
       />
@@ -77,7 +115,7 @@ export default function FleetOverviewPage() {
             icon: Zap,
           },
           {
-            label: 'Issues',
+            label: 'Active alerts',
             value: kpis.alertCount != null ? String(kpis.alertCount) : null,
             detail: 'Stale / BAD / BMS / O19',
             icon: Activity,
@@ -85,73 +123,86 @@ export default function FleetOverviewPage() {
         ]}
       />
 
-      {plantEmpty ? (
-        <AssetRailEmpty />
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-          <div className="xl:col-span-7">
-            <PlantCanvas layers={layers} selectedId={active?.equipment_id} onSelect={setSelected} />
-          </div>
-          <div className="xl:col-span-5">
-            <AssetRail selected={active} opportunities={allOpps} telStatus={tel} />
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <section className="glass-card p-4 xl:col-span-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Energy</div>
-          {energy.length === 0 ? (
-            <p className="text-[12px] text-slate-500 mt-3">AWAITING TELEMETRY — no energy series yet.</p>
+        <div className="xl:col-span-8 space-y-4">
+          {plantEmpty ? (
+            <AssetRailEmpty />
           ) : (
-            <ul className="mt-3 space-y-1 font-mono text-[11px] text-slate-400 max-h-40 overflow-y-auto">
-              {energy.slice(-12).map((p, i) => (
-                <li key={`${p.t}-${i}`} className="flex justify-between gap-2">
-                  <span className="truncate">{String(p.t || '')}</span>
-                  <span className="text-slate-200">
-                    {p.v} {data?.energy?.unit}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-7">
+                <PlantCanvas layers={layers} selectedId={active?.equipment_id} onSelect={setSelected} />
+              </div>
+              <div className="lg:col-span-5">
+                <AssetRail selected={active} opportunities={allOpps} telStatus={tel} />
+              </div>
+            </div>
           )}
-        </section>
+          <section className="card-static p-5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[13px] font-semibold text-slate-800">Energy</div>
+              <span className="text-[10px] font-mono text-slate-400">GUIDE_POTENTIAL is not plotted here</span>
+            </div>
+            <EnergySparkline points={energy} unit={data?.energy?.unit} />
+          </section>
+        </div>
         <div className="xl:col-span-4">
           <AlertRail alerts={data?.alerts} />
         </div>
-        <div className="xl:col-span-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-3">Guide chapters</div>
-          <SystemsHub chapters={data?.chapters} variant="compact" />
-          <p className="text-[9px] font-mono text-slate-600 mt-2">GUIDE_POTENTIAL · non-cumulative · not measured LIVE</p>
-        </div>
       </div>
 
-      <details className="glass-card p-4">
-        <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-          All opportunities
-        </summary>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
-          {allOpps.map((o) => {
-            const def = getOpportunity(o.id);
-            return (
-              <OpportunityCard
-                key={o.id}
-                code={o.id}
-                title={def?.title || o.title || o.id}
-                href={o.href || def?.route || '/agents'}
-                telemetryLabel={o.telemetry}
-                emptyTitle="AWAITING TELEMETRY"
-                emptyDetail={o.practice || def?.description}
-                fields={[
-                  { label: 'Table 1', value: o.applicability || 'Unmapped' },
-                  { label: 'Guide', value: o.guide_savings_potential || 'GUIDE_POTENTIAL' },
-                ]}
-                maxFields={4}
-              />
-            );
-          })}
+      <div>
+        <div className="text-[13px] font-semibold text-slate-800 mb-3">Guide chapters</div>
+        <SystemsHub chapters={data?.chapters} variant="compact" />
+        <p className="text-[10px] font-mono text-slate-400 mt-2">GUIDE_POTENTIAL · non-cumulative · not measured LIVE</p>
+      </div>
+
+      <section className="card-static overflow-hidden">
+        <div className="px-5 py-4 flex items-center justify-between gap-2 border-b border-slate-100">
+          <div className="text-[13px] font-semibold text-slate-800">Opportunities O1–O20</div>
+          <span className="text-[11px] text-slate-400">{allOpps.length} modules</span>
         </div>
-      </details>
+        <div className="overflow-x-auto">
+          <table className="bms-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Table 1</th>
+                <th>Telemetry</th>
+                <th>Guide %</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allOpps.map((o) => {
+                const def = getOpportunity(o.id);
+                return (
+                  <tr key={o.id}>
+                    <td className="font-mono font-semibold text-violet-700">{o.id}</td>
+                    <td className="text-slate-800">{def?.title || o.title || o.id}</td>
+                    <td>
+                      <StatusBadge tone="neutral" pulse={false}>
+                        {o.applicability || 'Unmapped'}
+                      </StatusBadge>
+                    </td>
+                    <td>
+                      <StatusBadge tone={toneForStatus(o.telemetry)} pulse={o.telemetry === 'LIVE'}>
+                        {o.telemetry || 'NO DATA'}
+                      </StatusBadge>
+                    </td>
+                    <td className="font-mono text-[11px] text-slate-500">{o.guide_savings_potential || 'GUIDE_POTENTIAL'}</td>
+                    <td>
+                      <Link href={o.href || def?.route || '/agents'} className="text-violet-600 font-semibold text-[12px] hover:text-violet-800">
+                        Open
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

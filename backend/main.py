@@ -2,24 +2,17 @@ import os
 import sys
 from contextlib import asynccontextmanager
 
-if os.getenv("VERCEL"):
-    os.environ["DATABASE_URL"] = "sqlite:////tmp/hvac_supervisory.db"
-    os.environ.setdefault("HVAC_START_CONTROL_WORKER", "0")
-    os.environ.setdefault("HVAC_ALLOW_CREATE_ALL", "1")
-    os.environ.setdefault("HVAC_BMS_MODE", "simulation")
-    os.environ.setdefault("HVAC_USE_SIMULATION", "1")
-    os.environ.setdefault("HVAC_BMS_WRITE_ENABLED", "0")
-    os.environ.setdefault("HVAC_ALLOW_SIM_WRITES", "1")
-    os.environ.setdefault("HVAC_DEPLOYMENT_MODE", "demo")
-    os.environ.setdefault("HVAC_PLANT_MODE_PERSIST", "1")
-    os.environ.setdefault("HVAC_CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
-
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _BACKEND = os.path.dirname(os.path.abspath(__file__))
 if _BACKEND not in sys.path:
     sys.path.append(_BACKEND)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
+
+from backend.cloud_env import apply_cloud_demo_env  # noqa: E402
+
+apply_cloud_demo_env()
+
 
 def _load_root_env() -> None:
     path = os.path.join(_ROOT, ".env")

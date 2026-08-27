@@ -22,6 +22,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.13",
     "@playwright/test": "^1.62.1",
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",

@@ -164,13 +164,15 @@ function BmsPageInner() {
   return (
     <div className="space-y-6 pb-12">
       <PageHeader icon={Radio} title="Gateway" subtitle="Commissioning: connect, discover, and map canonical points so O1–O20 can run." badge="READ-ONLY" />
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {(['status', 'connection', 'devices', 'points', 'mapping', 'writes'] as BmsTab[]).map((id) => (
           <button
             key={id}
             type="button"
-            className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded-md border ${
-              activeTab === id ? 'border-cyan-400/50 text-cyan-100 bg-cyan-500/10' : 'border-transparent text-slate-500 hover:text-slate-300'
+            className={`px-3.5 py-2 text-[11px] font-semibold tracking-wide rounded-full border transition-colors ${
+              activeTab === id
+                ? 'border-violet-400 text-white bg-violet-500 shadow-md shadow-violet-200'
+                : 'border-slate-200 text-slate-500 bg-white hover:border-violet-200 hover:text-violet-700'
             }`}
             onClick={() => setTab(id)}
           >
@@ -188,7 +190,7 @@ function BmsPageInner() {
           </button>
         ))}
       </div>
-      <div className="rounded-xl border border-amber-400/25 bg-amber-500/[0.08] px-4 py-3 text-[12px] text-amber-100" role="status">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900" role="status">
         READ-ONLY COMMISSIONING — BMS writes are disabled until Stage G prerequisites pass and ENABLE WRITES is confirmed.
         {st.labMode ? ' Lab BACnet (HVAC_BMS_LAB=1) is active — LIVE_BMS path, not dataset simulation.' : ''}
       </div>

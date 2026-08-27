@@ -38,8 +38,12 @@ export function ChapterChrome({ chapterId }: { chapterId: string }) {
         <p className="text-[11px] font-mono text-slate-500">
           {ch?.section || 'OEH / AIRAH chapter'} · GUIDE_POTENTIAL is not measured LIVE kW
         </p>
-        <StatusBadge tone={toneForStatus(tel)}>{tel}</StatusBadge>
-        <StatusBadge tone={toneForStatus(data?.bms?.status)}>BMS {data?.bms?.status || 'DISCONNECTED'}</StatusBadge>
+        <StatusBadge tone={toneForStatus(tel)} pulse={tel === 'LIVE'}>
+          {tel}
+        </StatusBadge>
+        <StatusBadge tone={toneForStatus(data?.bms?.status)} pulse={false}>
+          BMS {data?.bms?.status || 'DISCONNECTED'}
+        </StatusBadge>
       </div>
       {Object.keys(layers).length > 0 ? (
         <PlantCanvas layers={layers} selectedId={selected?.equipment_id} onSelect={setSelected} compact />

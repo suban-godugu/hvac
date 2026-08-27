@@ -12,7 +12,7 @@ short_description: FastAPI O1-O20 HVAC agents (simulation, writes off)
 
 # HVAC agents API (Hugging Face)
 
-Phase 2 demo backend: **API + control worker**. The Next.js Control Center is on **Vercel**.
+Phase 2 demo backend: **API + control worker**. The Next.js Control Center is on **Netlify**; the live FastAPI demo is on **Render**.
 
 | Setting | Value |
 | --- | --- |
@@ -25,9 +25,9 @@ Phase 2 demo backend: **API + control worker**. The Next.js Control Center is on
 - Health: `/healthz`
 - Status: `/api/platform/status` (`plantMode=DATASET`, telemetry `SIMULATED`, never `LIVE`)
 
-Vercel env:
+Netlify / Render env:
 
 ```
-HVAC_API_ORIGIN=https://subhan07-hvac-agents.hf.space
-NEXT_PUBLIC_API_URL=https://subhan07-hvac-agents.hf.space/api
+HVAC_API_ORIGIN=https://<hvac-api>.onrender.com
+NEXT_PUBLIC_API_URL=https://<hvac-api>.onrender.com/api
 ```

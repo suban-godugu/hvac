@@ -16,6 +16,7 @@ import {
   Radio,
   Activity,
   Users,
+  Building2,
 } from 'lucide-react';
 import { opportunitiesForSection } from '@/lib/hvac/opportunityConfig';
 import { StatusBadge } from '@/components/hvac/StatusBadge';
@@ -62,11 +63,16 @@ export const Sidebar: React.FC = () => {
   else if (onTempReset && resetMode === 'CW') effectiveReset = 'CW';
   else if (onTempReset && (resetMode === 'CHW' || resetMode === '')) effectiveReset = 'CHW';
 
-  const item = (active: boolean) =>
-    `flex items-center gap-2 px-2.5 py-[7px] text-[11.5px] border-l-2 rounded-r-md transition-colors ${
+  const navItem = (active: boolean) =>
+    `flex items-center gap-2.5 px-3 py-2.5 text-[13px] rounded-full transition-all ${
       active
-        ? 'border-cyan-400 text-cyan-100 bg-cyan-500/[0.12] font-semibold'
-        : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+        ? 'bh-nav-active font-semibold'
+        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+    }`;
+
+  const subItem = (active: boolean) =>
+    `flex items-center gap-2 px-3 py-1.5 text-[12px] rounded-full transition-colors ${
+      active ? 'bg-violet-500/25 text-violet-100 font-semibold' : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.04]'
     }`;
 
   const Group: React.FC<{
@@ -79,8 +85,9 @@ export const Sidebar: React.FC = () => {
   }> = ({ title, icon, expanded, onToggle, color, children }) => (
     <div className="pt-1">
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[12px] font-semibold text-slate-300 hover:text-white rounded-md hover:bg-white/[0.03]"
+        className="w-full flex items-center justify-between px-3 py-2 text-left text-[12px] font-semibold text-slate-300 hover:text-white rounded-full hover:bg-white/[0.04]"
       >
         <span className="flex items-center gap-2 min-w-0">
           <span style={{ color }}>{icon}</span>
@@ -102,8 +109,8 @@ export const Sidebar: React.FC = () => {
     label,
     active,
   }) => (
-    <Link href={href} className={item(active)} title={label}>
-      <span className={`font-mono w-8 shrink-0 ${active ? 'text-cyan-400' : 'text-slate-500'}`}>{id}</span>
+    <Link href={href} className={subItem(active)} title={label}>
+      <span className={`font-mono w-8 shrink-0 ${active ? 'text-violet-200' : 'text-slate-600'}`}>{id}</span>
       <span className="leading-snug truncate">{label}</span>
     </Link>
   );
@@ -115,34 +122,39 @@ export const Sidebar: React.FC = () => {
   const om = opportunitiesForSection('operations');
 
   return (
-    <aside className="hvac-sidebar w-72 border-r border-white/[0.07] flex flex-col select-none h-[calc(100vh-4rem)] sticky top-16 overflow-hidden">
-      <div className="px-4 py-3.5 border-b border-white/[0.06] shrink-0 bg-gradient-to-b from-cyan-500/[0.06] to-transparent">
-        <div className="text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">Control Center</div>
-        <div className="text-[11px] font-medium text-slate-300 mt-0.5">Twenty supervisory opportunities</div>
+    <aside className="hvac-sidebar w-[17rem] flex flex-col select-none overflow-hidden bg-[#1a1a1d] text-slate-200">
+      <div className="px-4 py-4 shrink-0 flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-400/30 flex items-center justify-center text-violet-300">
+          <Building2 className="w-4 h-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-white tracking-tight leading-none">HVAC Control</div>
+          <div className="text-[10px] text-slate-500 mt-1">OEH · O1–O20</div>
+        </div>
       </div>
-      <nav className="p-2 space-y-0.5 flex-1 overflow-y-auto">
-        <div className="px-2 pt-2 pb-1 text-[10px] font-semibold tracking-[0.16em] text-slate-600 uppercase">Platform</div>
-        <Link href="/overview" className={item(isActive('/overview') || isActive('/'))}>
-          <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
+      <nav className="px-2.5 pb-3 space-y-0.5 flex-1 overflow-y-auto">
+        <div className="px-3 pt-2 pb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-600 uppercase">Platform</div>
+        <Link href="/overview" className={navItem(isActive('/overview') || isActive('/'))}>
+          <LayoutDashboard className="w-4 h-4 shrink-0" />
           Dashboard
         </Link>
-        <Link href="/agents" className={item(isActive('/agents'))}>
-          <Users className="w-3.5 h-3.5 shrink-0" />
+        <Link href="/agents" className={navItem(isActive('/agents'))}>
+          <Users className="w-4 h-4 shrink-0" />
           Systems
         </Link>
-        <Link href="/platform/bms" className={item(pathname.startsWith('/platform/bms'))}>
-          <Radio className="w-3.5 h-3.5 shrink-0" />
+        <Link href="/platform/bms" className={navItem(pathname.startsWith('/platform/bms'))}>
+          <Radio className="w-4 h-4 shrink-0" />
           Gateway
         </Link>
-        <Link href="/platform/telemetry" className={item(pathname.startsWith('/platform/telemetry'))}>
-          <Activity className="w-3.5 h-3.5 shrink-0" />
+        <Link href="/platform/telemetry" className={navItem(pathname.startsWith('/platform/telemetry'))}>
+          <Activity className="w-4 h-4 shrink-0" />
           Telemetry
         </Link>
-        <Link href="/ml" className={item(isActive('/ml') || pathname.startsWith('/ml'))}>
-          <Brain className="w-3.5 h-3.5 shrink-0" />
+        <Link href="/ml" className={navItem(isActive('/ml') || pathname.startsWith('/ml'))}>
+          <Brain className="w-4 h-4 shrink-0" />
           ML Registry
         </Link>
-        <div className="px-2 pt-4 pb-1 text-[10px] font-semibold tracking-[0.16em] text-slate-600 uppercase">Opportunities</div>
+        <div className="px-3 pt-4 pb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-600 uppercase">Opportunities</div>
         <Group
           title="Scheduling"
           icon={<CalendarClock className="w-3.5 h-3.5" />}
@@ -150,7 +162,7 @@ export const Sidebar: React.FC = () => {
           onToggle={() => setOpen((s) => ({ ...s, scheduling: !s.scheduling }))}
           color="var(--cat-scheduling)"
         >
-          <Link href="/agents/scheduling" className={item(isActive('/agents/scheduling'))}>
+          <Link href="/agents/scheduling" className={subItem(isActive('/agents/scheduling'))}>
             Dashboard
           </Link>
           {scheduling.map((o) => (
@@ -171,7 +183,7 @@ export const Sidebar: React.FC = () => {
           onToggle={() => setOpen((s) => ({ ...s, plant: !s.plant }))}
           color="var(--cat-plant)"
         >
-          <Link href="/agents/plant-control" className={item(isActive('/agents/plant-control'))}>
+          <Link href="/agents/plant-control" className={subItem(isActive('/agents/plant-control'))}>
             Dashboard
           </Link>
           <OppLink
@@ -181,21 +193,21 @@ export const Sidebar: React.FC = () => {
             active={isActive('/agents/plant-control/duct-static-pressure')}
           />
           <div>
-            <Link href="/agents/plant-control/temperature-reset" className={item(false)}>
-              <span className="font-mono w-8 shrink-0 text-slate-500">O6–8</span>
+            <Link href="/agents/plant-control/temperature-reset" className={subItem(false)}>
+              <span className="font-mono w-8 shrink-0 text-slate-600">O6–8</span>
               <span className="leading-snug truncate">Temperature Reset</span>
             </Link>
-            <div className="ml-8 mt-0.5 space-y-0.5">
-              <Link href="/agents/plant-control/temperature-reset?mode=HHW" className={item(effectiveReset === 'HHW')}>
-                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'HHW' ? 'text-cyan-400' : 'text-slate-500'}`}>O6</span>
+            <div className="ml-4 mt-0.5 space-y-0.5">
+              <Link href="/agents/plant-control/temperature-reset?mode=HHW" className={subItem(effectiveReset === 'HHW')}>
+                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'HHW' ? 'text-violet-200' : 'text-slate-600'}`}>O6</span>
                 Heating Hot Water
               </Link>
-              <Link href="/agents/plant-control/temperature-reset?mode=CHW" className={item(effectiveReset === 'CHW')}>
-                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'CHW' ? 'text-cyan-400' : 'text-slate-500'}`}>O7</span>
+              <Link href="/agents/plant-control/temperature-reset?mode=CHW" className={subItem(effectiveReset === 'CHW')}>
+                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'CHW' ? 'text-violet-200' : 'text-slate-600'}`}>O7</span>
                 Chilled Water
               </Link>
-              <Link href="/agents/plant-control/temperature-reset?mode=CW" className={item(effectiveReset === 'CW')}>
-                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'CW' ? 'text-cyan-400' : 'text-slate-500'}`}>O8</span>
+              <Link href="/agents/plant-control/temperature-reset?mode=CW" className={subItem(effectiveReset === 'CW')}>
+                <span className={`font-mono w-8 shrink-0 ${effectiveReset === 'CW' ? 'text-violet-200' : 'text-slate-600'}`}>O8</span>
                 Condenser Water
               </Link>
             </div>
@@ -215,7 +227,7 @@ export const Sidebar: React.FC = () => {
           onToggle={() => setOpen((s) => ({ ...s, vent: !s.vent }))}
           color="var(--cat-ventilation)"
         >
-          <Link href="/agents/ventilation-airflow" className={item(pathname === '/agents/ventilation-airflow')}>
+          <Link href="/agents/ventilation-airflow" className={subItem(pathname === '/agents/ventilation-airflow')}>
             Dashboard
           </Link>
           {vent.map((o) => (
@@ -236,7 +248,7 @@ export const Sidebar: React.FC = () => {
           onToggle={() => setOpen((s) => ({ ...s, vs: !s.vs }))}
           color="var(--cat-variablespeed)"
         >
-          <Link href="/agents/variable-speed" className={item(pathname === '/agents/variable-speed')}>
+          <Link href="/agents/variable-speed" className={subItem(pathname === '/agents/variable-speed')}>
             Dashboard
           </Link>
           {vs.map((o) => (
@@ -251,7 +263,7 @@ export const Sidebar: React.FC = () => {
           onToggle={() => setOpen((s) => ({ ...s, om: !s.om }))}
           color="var(--cat-om)"
         >
-          <Link href="/agents/operations-maintenance" className={item(pathname === '/agents/operations-maintenance')}>
+          <Link href="/agents/operations-maintenance" className={subItem(pathname === '/agents/operations-maintenance')}>
             Dashboard
           </Link>
           {om.map((o) => (
@@ -259,8 +271,8 @@ export const Sidebar: React.FC = () => {
           ))}
         </Group>
       </nav>
-      <div className="shrink-0 border-t border-white/[0.06] px-3 py-2.5 flex items-center gap-2 bg-[color:var(--bg-elevated)]">
-        <StatusBadge tone={bmsStatus === 'CONNECTED' ? 'live' : 'muted'} pulse={bmsStatus === 'CONNECTED'}>
+      <div className="shrink-0 border-t border-white/[0.06] px-3 py-3 flex flex-wrap items-center gap-1.5">
+        <StatusBadge tone={bmsStatus === 'CONNECTED' ? 'live' : 'muted'} pulse={false}>
           BMS {bmsStatus}
         </StatusBadge>
         <StatusBadge tone={telemetryLabel === 'LIVE' ? 'live' : 'warn'} pulse={false}>

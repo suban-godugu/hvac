@@ -17,3 +17,4 @@ database/worker_heartbeat.txt
 debug-*.log
 .hf-upload/
 .vercel
+.netlify

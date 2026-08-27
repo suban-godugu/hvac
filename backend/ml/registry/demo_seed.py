@@ -1,6 +1,6 @@
 """Seed ML registry + demo pickle artifacts for simulation hosts.
 
-Agent Centre reads model_type from ml_model_registry. Vercel has no Kaggle
+Agent Centre reads model_type from ml_model_registry. Hosted demos have no Kaggle
 archives, so train_all never runs — this fills trainable O's with a tiny
 pickled predictor so /predict does not return "Artifact missing".
 Never invents models for O10 / O13 / O18 / O20 (MODEL_NOT_TRAINABLE).

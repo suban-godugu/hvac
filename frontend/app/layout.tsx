@@ -37,23 +37,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${jakarta.variable} ${jetbrains.variable}`} style={{ colorScheme: "dark" }}>
+    <html lang="en" className={`${jakarta.variable} ${jetbrains.variable}`} style={{ colorScheme: "light" }}>
       <head>
         <link rel="stylesheet" href="/hvac-shell.css" />
       </head>
-      <body className="hvac-shell text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-700/80 selection:text-white antialiased">
+      <body className="hvac-shell text-slate-700 min-h-screen flex flex-col font-sans selection:bg-violet-200 selection:text-violet-950 antialiased">
         <QueryProvider>
           <LiveTelemetryProvider>
             <Header />
             <div className="hvac-body flex flex-1 min-h-0">
             <Suspense
               fallback={
-                <aside className="hvac-sidebar w-72 bg-[#080e18] border-r border-white/[0.07] h-[calc(100vh-4rem)] sticky top-16" />
+                <aside className="hvac-sidebar w-[17rem] bg-[#1a1a1d] h-[calc(100vh-4.25rem)] sticky top-[4.25rem]" />
               }
             >
               <Sidebar />
             </Suspense>
-            <main className="hvac-main flex-1 px-6 py-7 lg:px-9 lg:py-8 overflow-y-auto w-full">
+            <main className="hvac-main flex-1 overflow-y-auto w-full">
               <div className="max-w-[1600px] mx-auto w-full space-y-0">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </div>

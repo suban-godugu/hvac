@@ -1,15 +1,14 @@
-/* Unhashed shell CSS. Served from /hvac-shell.css so the dark layout
-   still applies if hashed /_next/static/css chunks 404 after a mixed build. */
+/* Unhashed shell CSS. BuildingHub light canvas + dark sidebar. */
 html,
 body {
-  background-color: #05080f;
-  color: #e2e8f0;
+  background-color: #f0f0fa;
+  color: #334155;
   min-height: 100%;
   margin: 0;
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -31,8 +30,8 @@ select {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #05080f;
-  color: #e2e8f0;
+  background-color: #f0f0fa;
+  color: #334155;
 }
 
 .hvac-body {
@@ -42,25 +41,28 @@ select {
 }
 
 .hvac-sidebar {
-  width: 18rem;
+  width: 17rem;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #0a1220 0%, #080e18 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  height: calc(100vh - 4rem);
+  background: #1a1a1d;
+  border-right: none;
+  height: calc(100vh - 4.25rem);
   position: sticky;
-  top: 4rem;
+  top: 4.25rem;
   overflow-y: auto;
+  border-radius: 0 1.25rem 1.25rem 0;
+  margin: 0.5rem 0 0.5rem 0.5rem;
+  height: calc(100vh - 4.25rem - 1rem);
 }
 
 .hvac-main {
   flex: 1;
-  padding: 1.75rem 1.75rem 2.5rem;
+  padding: 1.5rem 1.75rem 2.5rem;
   overflow: auto;
   width: 100%;
 }
 
 @media (min-width: 1024px) {
   .hvac-main {
-    padding: 2rem 2.25rem 3rem;
+    padding: 1.75rem 2rem 3rem;
   }
 }

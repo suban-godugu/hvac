@@ -10,5 +10,5 @@ short_description: Agents API lives in the hvac-agents model repo
 
 # HVAC — UI is not hosted here
 
-Next.js Control Center → **Vercel**.  
-Backend + agents → **[subhan07/hvac-agents](https://huggingface.co/subhan07/hvac-agents)**.
+Next.js Control Center → **Netlify**.  
+Backend + agents → **[subhan07/hvac-agents](https://huggingface.co/subhan07/hvac-agents)** (live API on Render).

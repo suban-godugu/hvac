@@ -11,7 +11,7 @@ pipeline_tag: other
 
 FastAPI backend and **O1–O20** supervisory agents (simulation BMS, writes disabled). **No frontend.**
 
-The Next.js Control Center is deployed on **Vercel**.
+The Next.js Control Center is deployed on **Netlify**. The FastAPI demo is on **Render**.
 
 ## Run locally
 
@@ -29,7 +29,7 @@ This repo includes a `Dockerfile` that serves uvicorn on port **7860**. Free Hug
 python scripts/sync_hf_space.py --space
 ```
 
-Then set Vercel env:
+Then set Netlify env:
 
 - `HVAC_API_ORIGIN=https://<you>-hvac-api.hf.space`
 - `NEXT_PUBLIC_API_URL=https://<you>-hvac-api.hf.space/api`

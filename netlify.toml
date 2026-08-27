@@ -1,0 +1,13 @@
+# Next.js Control Center. Point HVAC_API_ORIGIN / NEXT_PUBLIC_API_URL at the Render API
+# in the Netlify UI after the first Render deploy (https://<service>.onrender.com).
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

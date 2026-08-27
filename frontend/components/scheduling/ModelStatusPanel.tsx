@@ -68,7 +68,7 @@ export const ModelStatusPanel: React.FC<{ opportunities?: any[] }> = ({ opportun
           <p className="text-[11px] text-slate-400 font-mono mt-0.5">
             {workerStatus?.worker_running
               ? `Cycle #${workerStatus?.cycle_count ?? '—'} · ${workerStatus?.interval_seconds ?? '—'}s interval`
-              : 'Demo host — control worker is not persistently hosted (expected on Vercel).'}
+              : 'Demo host — control worker is stopped.'}
           </p>
         </div>
 

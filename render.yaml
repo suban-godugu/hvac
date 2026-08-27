@@ -1,0 +1,39 @@
+# Render Blueprint: FastAPI demo API (simulation, production BMS writes off).
+# Dashboard: https://dashboard.render.com → New → Blueprint
+previewsEnabled: false
+
+services:
+  - type: web
+    name: hvac-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: HVAC_ENV
+        value: production
+      - key: HVAC_DEPLOYMENT_MODE
+        value: demo
+      - key: HVAC_BMS_MODE
+        value: simulation
+      - key: HVAC_USE_SIMULATION
+        value: "1"
+      - key: HVAC_BMS_WRITE_ENABLED
+        value: "0"
+      - key: HVAC_ALLOW_SIM_WRITES
+        value: "1"
+      - key: HVAC_ALLOW_CREATE_ALL
+        value: "1"
+      - key: HVAC_START_CONTROL_WORKER
+        value: "1"
+      - key: HVAC_PLANT_MODE_PERSIST
+        value: "1"
+      - key: HVAC_SAFE_MODE
+        value: "0"
+      - key: HVAC_CORS_ORIGINS
+        value: "http://localhost:3000,http://127.0.0.1:3000"
+      - key: HVAC_CORS_ORIGIN_REGEX
+        value: 'https://.*\.(netlify\.app|onrender\.com)'

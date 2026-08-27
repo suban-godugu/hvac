@@ -14,15 +14,16 @@ module.exports = {
       },
       colors: {
         hvac: {
-          dark: '#05080f',
-          surface: '#0a101c',
-          card: '#0d1524',
-          border: '#334155',
-          accent: '#0284c7',
-          cyan: '#22d3ee',
+          dark: '#1a1a1d',
+          surface: '#f8f8fc',
+          card: '#ffffff',
+          border: '#e2e8f0',
+          accent: '#8b5cf6',
+          cyan: '#8b5cf6',
+          purple: '#8b5cf6',
           emerald: '#10b981',
           amber: '#f59e0b',
-          rose: '#f43f5e',
+          rose: '#ec4899',
         }
       }
     },

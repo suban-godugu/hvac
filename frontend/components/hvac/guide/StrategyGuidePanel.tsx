@@ -123,7 +123,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
           <div className="text-[11px] font-mono uppercase tracking-wider mb-1" style={{ color: cat.color }}>
             OEH guide {item.opportunity_id} · {ev?.provenance || 'SIMULATED'} — not live BMS · agent read-only
           </div>
-          <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">{item.summary}</p>
+          <p className="text-sm text-slate-600 leading-relaxed max-w-2xl">{item.summary}</p>
           {ev?.agent?.recommendation ? (
             <p className="text-[11px] font-mono text-slate-500 mt-2">
               Agent {item.opportunity_id} {ev.agent.recommendation}
@@ -135,10 +135,10 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
         <div className="flex items-center gap-4 shrink-0">
           <button type="button" className="flex flex-col items-center gap-1" onClick={() => setIncluded((v) => !v)}>
             <span className="text-[9px] font-mono uppercase text-slate-500">Include in savings estimate</span>
-            <span className={`w-14 h-7 rounded-full border relative ${included ? 'border-emerald-400 bg-emerald-500/20' : 'border-white/20 bg-white/5'}`}>
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full transition-all ${included ? 'left-8 bg-emerald-400' : 'left-0.5 bg-slate-500'}`} />
+            <span className={`w-14 h-7 rounded-full border relative ${included ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full transition-all ${included ? 'left-8 bg-emerald-500' : 'left-0.5 bg-slate-400'}`} />
             </span>
-            <span className={`text-[9px] font-mono ${included ? 'text-emerald-300' : 'text-slate-500'}`}>{included ? 'INCLUDED' : 'NOT INCLUDED'}</span>
+            <span className={`text-[9px] font-mono ${included ? 'text-emerald-700' : 'text-slate-500'}`}>{included ? 'INCLUDED' : 'NOT INCLUDED'}</span>
           </button>
           <div className="relative w-[76px] h-[76px]">
             <svg width="76" height="76" viewBox="0 0 76 76" className="-rotate-90">
@@ -155,44 +155,44 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
 
       <div className="kpi-tile kpi-tile-flush">
         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Principle</div>
-        <p className="text-sm text-slate-300 leading-relaxed">{item.principle}</p>
-      </div>
-      <div className="kpi-tile kpi-tile-flush">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Equipment — map in Gateway</div>
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {equip.map((eq) => (
-            <li key={eq}>
-              <Link href={mappingHref()} className="text-sm text-cyan-200/90 hover:text-cyan-100">
-                {eq}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="kpi-tile kpi-tile-flush">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Current practice</div>
-        <p className="text-sm text-slate-300 leading-relaxed">{item.practice}</p>
-      </div>
-      <div className="kpi-tile kpi-tile-flush">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Potential (GUIDE_POTENTIAL)</div>
-        <p className="text-sm text-slate-300 leading-relaxed">
-          Up to {item.pct}% of {item.scope} — individual, non-cumulative. Not measured LIVE kW.
-        </p>
-      </div>
-      {item.scenario ? (
-        <div className="kpi-tile kpi-tile-flush" style={{ background: cat.dim, borderColor: cat.color }}>
-          <div className="text-[10px] font-mono uppercase tracking-wider mb-1" style={{ color: cat.color }}>
-            Case study · OEH example (not this building)
-          </div>
-          <p className="text-sm text-slate-200 leading-relaxed">{item.scenario}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">{item.principle}</p>
         </div>
-      ) : null}
-      {item.recommendation ? (
         <div className="kpi-tile kpi-tile-flush">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Recommended action</div>
-          <p className="text-sm text-slate-300 leading-relaxed">{item.recommendation}</p>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Equipment — map in Gateway</div>
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
+            {equip.map((eq) => (
+              <li key={eq}>
+                <Link href={mappingHref()} className="text-sm text-violet-700 hover:text-violet-900">
+                  {eq}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
-      ) : null}
+        <div className="kpi-tile kpi-tile-flush">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Current practice</div>
+          <p className="text-sm text-slate-600 leading-relaxed">{item.practice}</p>
+        </div>
+        <div className="kpi-tile kpi-tile-flush">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Potential (GUIDE_POTENTIAL)</div>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Up to {item.pct}% of {item.scope} — individual, non-cumulative. Not measured LIVE kW.
+          </p>
+        </div>
+        {item.scenario ? (
+          <div className="kpi-tile kpi-tile-flush" style={{ background: cat.dim, borderColor: cat.color }}>
+            <div className="text-[10px] font-mono uppercase tracking-wider mb-1" style={{ color: cat.color }}>
+              Case study · OEH example (not this building)
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed">{item.scenario}</p>
+          </div>
+        ) : null}
+        {item.recommendation ? (
+          <div className="kpi-tile kpi-tile-flush">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Recommended action</div>
+            <p className="text-sm text-slate-600 leading-relaxed">{item.recommendation}</p>
+          </div>
+        ) : null}
 
       <div className="kpi-tile kpi-tile-flush">
         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Guide comparison (simulated) — {item.scope}</div>
@@ -267,7 +267,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
             </LineChart>
           </EngineeringChart>
         )}
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/[0.06] mt-2">
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-100 mt-2">
           {metrics.map((m) => (
             <div key={m.label}>
               <div className="text-lg font-mono font-bold" style={{ color: cat.color }}>
@@ -285,8 +285,8 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="block">
             <span className="text-[11px] font-mono text-slate-400">Assumed annual {item.scope} spend (USD)</span>
-            <div className="mt-1 flex items-center gap-1 rounded border border-white/10 bg-black/20 px-2">
-              <span className="text-slate-500 font-mono">$</span>
+            <div className="mt-1 flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2">
+              <span className="text-slate-400 font-mono">$</span>
               <input
                 type="number"
                 className="w-full bg-transparent py-2 text-sm font-mono outline-none"
@@ -307,7 +307,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
             </div>
           </label>
         </div>
-        <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.06]">
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-100">
           <div>
             <div className={`text-lg font-mono font-bold ${included ? '' : 'text-slate-600'}`} style={included ? { color: cat.color } : undefined}>
               {effectivePct.toFixed(1)}%
@@ -335,8 +335,8 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
           {equip.map((eq, i) => (
             <li key={eq}>
               <button type="button" className="flex items-start gap-2 text-left text-sm text-slate-300" onClick={() => setChecks((c) => ({ ...c, [i]: !c[i] }))}>
-                <span className={`mt-0.5 w-4 h-4 rounded border shrink-0 ${checks[i] ? '' : 'border-white/20'}`} style={checks[i] ? { background: cat.color, borderColor: cat.color } : undefined} />
-                <span className={checks[i] ? 'text-slate-500 line-through' : ''}>{eq}</span>
+                <span className={`mt-0.5 w-4 h-4 rounded border shrink-0 ${checks[i] ? '' : 'border-slate-300'}`} style={checks[i] ? { background: cat.color, borderColor: cat.color } : undefined} />
+                <span className={checks[i] ? 'text-slate-400 line-through' : 'text-slate-700'}>{eq}</span>
               </button>
             </li>
           ))}

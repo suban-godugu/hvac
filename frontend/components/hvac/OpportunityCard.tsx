@@ -44,35 +44,38 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   const statusText = status || emptyTitle || 'AWAITING TELEMETRY';
 
   return (
-    <Link href={href} className="glass-card flex flex-col justify-between p-4 group hover:-translate-y-0.5">
+    <Link
+      href={href}
+      className="card-interactive glass-card flex flex-col justify-between p-4 group border-l-[3px] border-l-violet-400"
+    >
       <div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border border-cyan-400/30 bg-cyan-500/10 text-cyan-300 tracking-wide">
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 tracking-wide">
             {code}
           </span>
           <StatusBadge tone={toneForStatus(statusText)} pulse={false}>
             {statusText}
           </StatusBadge>
         </div>
-        <h3 className="text-[15px] font-semibold text-slate-50 mt-3 tracking-tight leading-snug group-hover:text-cyan-100 transition-colors">
+        <h3 className="text-[15px] font-semibold text-slate-900 mt-3 tracking-tight leading-snug group-hover:text-violet-700 transition-colors">
           {title}
         </h3>
-        {telemetryLabel ? <p className="text-[10px] font-mono text-slate-500 mt-1">{telemetryLabel}</p> : null}
+        {telemetryLabel ? <p className="text-[10px] font-mono text-slate-400 mt-1">{telemetryLabel}</p> : null}
       </div>
 
-      <div className="my-3 space-y-1.5 py-3 border-y border-white/[0.06] text-xs font-mono">
+      <div className="my-3 space-y-1.5 py-3 border-y border-slate-100 text-xs">
         {visible.length === 0 ? (
-          <div className="text-amber-200/90 text-[11px]">
+          <div className="text-amber-700 text-[11px]">
             {emptyTitle || 'AWAITING TELEMETRY'}
-            <div className="text-slate-500 font-sans mt-1 leading-relaxed">
+            <div className="text-slate-500 mt-1 leading-relaxed">
               {emptyDetail || 'No usable telemetry or evaluation is available for this opportunity.'}
             </div>
           </div>
         ) : (
           visible.map((m) => (
-            <div key={m.label} className="flex items-center justify-between gap-3 text-slate-400">
+            <div key={m.label} className="flex items-center justify-between gap-3 text-slate-500">
               <span>{m.label}</span>
-              <span className="text-slate-100 font-semibold text-right">{m.value}</span>
+              <span className="text-slate-800 font-semibold text-right font-mono text-[11px]">{m.value}</span>
             </div>
           ))
         )}
@@ -80,13 +83,15 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
 
       <div className="space-y-2">
         {impactLabel && (
-          <div className="p-2 rounded-[10px] bg-[color:var(--bg-primary)]/80 border border-white/[0.06] flex items-center justify-between text-[11px]">
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px]">
             <span className="text-slate-500">{impactLabel}</span>
-            <span className="text-cyan-300 font-mono font-semibold">{emptyLabel(impactValue, emptyTitle || 'AWAITING TELEMETRY')}</span>
+            <span className="text-violet-700 font-mono font-semibold">
+              {emptyLabel(impactValue, emptyTitle || 'AWAITING TELEMETRY')}
+            </span>
           </div>
         )}
-        <span className="btn-primary w-full justify-center">
-          <span>Open</span>
+        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-violet-600 group-hover:text-violet-800">
+          Open studio
           <ArrowRight className="w-3.5 h-3.5" />
         </span>
       </div>
