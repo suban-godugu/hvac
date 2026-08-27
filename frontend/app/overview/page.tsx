@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, LayoutDashboard, Server, ShieldCheck, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
+import { EmptyState } from '@/components/hvac/EmptyState';
 import { AlertRail, AssetRail, AssetRailEmpty, KpiRow, PlantCanvas, SystemsHub } from '@/components/hvac/bms-home';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
@@ -94,6 +95,16 @@ export default function FleetOverviewPage() {
         }
       />
 
+      {home.isError && !data ? (
+        <EmptyState
+          title="DATA SOURCE ERROR"
+          detail="Dashboard home could not be loaded. Check Gateway connectivity and retry."
+          href="/platform/bms"
+          actionLabel="Open Gateway"
+          onRetry={() => void home.refetch()}
+        />
+      ) : null}
+
       <KpiRow
         items={[
           {
@@ -174,31 +185,39 @@ export default function FleetOverviewPage() {
               </tr>
             </thead>
             <tbody>
-              {allOpps.map((o) => {
-                const def = getOpportunity(o.id);
-                return (
-                  <tr key={o.id}>
-                    <td className="font-mono font-semibold text-violet-700">{o.id}</td>
-                    <td className="text-slate-800">{def?.title || o.title || o.id}</td>
-                    <td>
-                      <StatusBadge tone="neutral" pulse={false}>
-                        {o.applicability || 'Unmapped'}
-                      </StatusBadge>
-                    </td>
-                    <td>
-                      <StatusBadge tone={toneForStatus(o.telemetry)} pulse={o.telemetry === 'LIVE'}>
-                        {o.telemetry || 'NO DATA'}
-                      </StatusBadge>
-                    </td>
-                    <td className="font-mono text-[11px] text-slate-500">{o.guide_savings_potential || 'GUIDE_POTENTIAL'}</td>
-                    <td>
-                      <Link href={o.href || def?.route || '/agents'} className="text-violet-600 font-semibold text-[12px] hover:text-violet-800">
-                        Open
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
+              {allOpps.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-slate-500 text-[13px] py-6">
+                    No O1–O20 opportunities returned. Connect plant data via Gateway or retry dashboard home.
+                  </td>
+                </tr>
+              ) : (
+                allOpps.map((o) => {
+                  const def = getOpportunity(o.id);
+                  return (
+                    <tr key={o.id}>
+                      <td className="font-mono font-semibold text-violet-700">{o.id}</td>
+                      <td className="text-slate-800">{def?.title || o.title || o.id}</td>
+                      <td>
+                        <StatusBadge tone="neutral" pulse={false}>
+                          {o.applicability || 'Unmapped'}
+                        </StatusBadge>
+                      </td>
+                      <td>
+                        <StatusBadge tone={toneForStatus(o.telemetry)} pulse={o.telemetry === 'LIVE'}>
+                          {o.telemetry || 'NO DATA'}
+                        </StatusBadge>
+                      </td>
+                      <td className="font-mono text-[11px] text-slate-500">{o.guide_savings_potential || 'GUIDE_POTENTIAL'}</td>
+                      <td>
+                        <Link href={o.href || def?.route || '/agents'} className="text-violet-600 font-semibold text-[12px] hover:text-violet-800">
+                          Open
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

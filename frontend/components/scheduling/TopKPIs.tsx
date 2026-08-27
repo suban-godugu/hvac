@@ -34,7 +34,11 @@ export const TopKPIs: React.FC<TopKPIsProps> = ({ data, backendOffline }) => {
           label: 'Active Opportunities',
           value: data?.activeOpportunitiesLabel ?? null,
           icon: Layers,
-          detail: 'dataState LIVE / 4',
+          detail: data?.telemetryFreshness
+            ? `Freshness ${data.telemetryFreshness}`
+            : data
+              ? 'Provenance from agent payload — not assumed LIVE'
+              : null,
         },
         {
           label: 'Actions Dispatched',

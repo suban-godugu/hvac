@@ -61,7 +61,7 @@ function FieldGrid({ title, entries }: { title: string; entries: { label: string
         {shown.map((e) => (
           <div key={e.label}>
             <div className="text-[10px] uppercase tracking-wider text-slate-500">{e.label}</div>
-            <div className="text-sm font-mono text-slate-100 mt-0.5">{fmt(e.value, e.unit)}</div>
+            <div className="text-sm font-mono text-slate-900 mt-0.5">{fmt(e.value, e.unit)}</div>
           </div>
         ))}
       </div>
@@ -208,8 +208,8 @@ export const OfficialOpportunityStudio: React.FC<OfficialOpportunityStudioProps>
           {(recAction || recText) && (
             <div className="kpi-tile">
               <div className="text-[11px] uppercase tracking-wider text-slate-500">Recommendation</div>
-              {recAction && <div className="text-lg font-mono text-cyan-300 mt-2">{recAction}</div>}
-              {recText && <p className="text-sm text-slate-300 mt-2">{String(recText)}</p>}
+              {recAction && <div className="text-lg font-mono text-violet-700 mt-2">{recAction}</div>}
+              {recText && <p className="text-sm text-slate-600 mt-2">{String(recText)}</p>}
               <div className="text-[11px] font-mono text-slate-500 mt-2">CONFIDENCE {formatPercent(data?.confidence)}</div>
             </div>
           )}
@@ -223,7 +223,7 @@ export const OfficialOpportunityStudio: React.FC<OfficialOpportunityStudioProps>
                 {data.safety_checks.map((c) => (
                   <div key={c.check_name} className="flex items-start justify-between gap-3 text-[12px]">
                     <div>
-                      <div className="text-slate-200">{c.check_name}</div>
+                      <div className="text-slate-800 font-medium">{c.check_name}</div>
                       <div className="text-[11px] text-slate-500">{c.reason}</div>
                     </div>
                     <StatusBadge tone={toneForStatus(c.result)}>{c.result}</StatusBadge>

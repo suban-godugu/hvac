@@ -77,7 +77,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
   if (!oid) {
     return (
       <div className="kpi-tile kpi-tile-flush" role="alert">
-        <div className="text-sm text-slate-200">OEH guide needs an official catalog id (O1–O20)</div>
+        <div className="text-sm text-slate-800">OEH guide needs an official catalog id (O1–O20)</div>
         <p className="text-[11px] text-slate-500 mt-1">Received {opportunityId || '(empty)'}. O6–O8 open from the temperature-reset page with mode=HHW, CHW, or CW.</p>
       </div>
     );
@@ -88,7 +88,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
   if (catalog.isError || !catalog.data) {
     return (
       <div className="kpi-tile kpi-tile-flush" role="alert">
-        <div className="text-sm text-slate-200">Unable to load OEH guide {oid}</div>
+        <div className="text-sm text-slate-800">Unable to load OEH guide {oid}</div>
         <p className="text-[11px] text-slate-500 mt-1">Backend catalog required. Values are not fabricated as LIVE.</p>
         <button type="button" className="btn-secondary mt-2 text-[11px] font-mono" onClick={() => catalog.refetch()}>
           Retry
@@ -142,7 +142,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
           </button>
           <div className="relative w-[76px] h-[76px]">
             <svg width="76" height="76" viewBox="0 0 76 76" className="-rotate-90">
-              <circle cx="38" cy="38" r="32" stroke="rgba(255,255,255,0.08)" strokeWidth="6" fill="none" />
+              <circle cx="38" cy="38" r="32" stroke="rgba(26,26,29,0.1)" strokeWidth="6" fill="none" />
               <circle cx="38" cy="38" r="32" stroke={cat.color} strokeWidth="6" fill="none" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ - dash} />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
@@ -199,14 +199,14 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="w-24 text-[11px] font-mono text-slate-500">Baseline</span>
-            <div className="flex-1 h-5 rounded bg-white/[0.06] overflow-hidden">
-              <div className="h-full bg-slate-500" style={{ width: '100%' }} />
+            <div className="flex-1 h-5 rounded bg-slate-100 overflow-hidden">
+              <div className="h-full bg-slate-400" style={{ width: '100%' }} />
             </div>
             <span className="w-10 text-right text-[11px] font-mono">100%</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="w-24 text-[11px] font-mono text-slate-500">Optimized</span>
-            <div className="flex-1 h-5 rounded bg-white/[0.06] overflow-hidden">
+            <div className="flex-1 h-5 rounded bg-slate-100 overflow-hidden">
               <div className="h-full" style={{ width: `${optWidth}%`, background: cat.color }} />
             </div>
             <span className="w-10 text-right text-[11px] font-mono" style={{ color: cat.color }}>
@@ -245,7 +245,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
         </div>
         {evaluated.isError ? (
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[11px] text-amber-300">Guide evaluate failed. Chart is not labeled LIVE.</p>
+            <p className="text-[11px] text-amber-700">Guide evaluate failed. Chart is not labeled LIVE.</p>
             <button type="button" className="btn-secondary text-[10px] font-mono py-1" onClick={() => evaluated.refetch()}>
               Retry
             </button>
@@ -334,7 +334,7 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {equip.map((eq, i) => (
             <li key={eq}>
-              <button type="button" className="flex items-start gap-2 text-left text-sm text-slate-300" onClick={() => setChecks((c) => ({ ...c, [i]: !c[i] }))}>
+              <button type="button" className="flex items-start gap-2 text-left text-sm text-slate-700" onClick={() => setChecks((c) => ({ ...c, [i]: !c[i] }))}>
                 <span className={`mt-0.5 w-4 h-4 rounded border shrink-0 ${checks[i] ? '' : 'border-slate-300'}`} style={checks[i] ? { background: cat.color, borderColor: cat.color } : undefined} />
                 <span className={checks[i] ? 'text-slate-400 line-through' : 'text-slate-700'}>{eq}</span>
               </button>

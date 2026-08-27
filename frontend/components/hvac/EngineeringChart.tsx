@@ -23,10 +23,10 @@ import {
 } from 'recharts';
 
 export const CHART_COLORS = {
-  grid: 'rgba(255,255,255,0.06)',
+  grid: 'rgba(26,26,29,0.08)',
   axis: '#64748b',
-  current: '#22d3ee',
-  optimized: '#34d399',
+  current: '#8b5cf6',
+  optimized: '#10b981',
   baseline: '#94a3b8',
 };
 
@@ -34,11 +34,11 @@ export const EngineeringTooltip = (props: any) => {
   const { active, payload, label } = props;
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0c1220] border border-white/[0.08] px-2.5 py-2 text-[11px] font-mono">
-      <div className="text-slate-400 mb-1">{label}</div>
+    <div className="bg-white border border-slate-200 shadow-lg rounded-xl px-2.5 py-2 text-[11px] font-mono">
+      <div className="text-slate-500 mb-1">{label}</div>
       {payload.map((p: any) => (
-        <div key={p.dataKey} className="text-slate-200">
-          {p.name}: <span className="text-cyan-300">{p.value}</span>
+        <div key={p.dataKey} className="text-slate-700">
+          {p.name}: <span className="text-violet-600 font-semibold">{p.value}</span>
         </div>
       ))}
     </div>

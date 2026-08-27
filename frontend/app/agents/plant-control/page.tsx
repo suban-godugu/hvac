@@ -105,11 +105,11 @@ export default function PlantControlDashboardPage() {
             <EmptyState title="NO DATA" detail="No plant-control activity rows were returned." />
           )}
           {activities.map((act, i) => (
-            <div key={act.id || i} className="grid grid-cols-1 sm:grid-cols-[4.5rem_9rem_1fr_5.5rem] gap-1 sm:gap-3 px-2 py-1.5 border border-white/[0.04] text-slate-300">
-              <span className="text-cyan-400">{act.opportunity || 'SYS'}</span>
-              <span className="text-slate-500 truncate">{act.timestamp}</span>
-              <span className="truncate">{act.message}</span>
-              <span className="text-emerald-400 sm:text-right">{act.stage}</span>
+            <div key={act.id || i} className="grid grid-cols-1 sm:grid-cols-[4.5rem_9rem_1fr_5.5rem] gap-1 sm:gap-3 px-2 py-1.5 border border-slate-100 rounded-xl text-slate-600">
+              <span className="text-violet-600 font-semibold">{act.opportunity || 'SYS'}</span>
+              <span className="text-slate-400 truncate">{act.timestamp}</span>
+              <span className="truncate text-slate-700">{act.message}</span>
+              <span className="text-emerald-600 sm:text-right">{act.stage}</span>
             </div>
           ))}
         </div>

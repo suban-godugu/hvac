@@ -206,7 +206,7 @@ function BmsPageInner() {
             Devices {deviceRows.length} · Mappings {mapRows.length} · Protocol {st.protocol || '—'}
           </div>
           <div className="text-[12px] text-slate-400">Last error: {st.last_error || st.lastError || '—'}</div>
-          {message ? <div className="text-[12px] text-slate-300 font-mono">{message}</div> : null}
+          {message ? <div className="text-[12px] text-slate-600 font-mono">{message}</div> : null}
         </section>
       ) : null}
 
@@ -256,7 +256,7 @@ function BmsPageInner() {
               DISCONNECT
             </button>
           </div>
-          {message ? <div className="text-[12px] text-slate-300 font-mono">{message}</div> : null}
+          {message ? <div className="text-[12px] text-slate-600 font-mono">{message}</div> : null}
           <div className="flex flex-wrap gap-2 text-[11px]">
             <StatusBadge tone={toneForStatus(st.status)}>{st.status || 'UNKNOWN'}</StatusBadge>
             <StatusBadge tone="neutral">{st.plantMode || '—'}</StatusBadge>
@@ -284,7 +284,7 @@ function BmsPageInner() {
                   {deviceRows.map((d: { id: string; name?: string; device_type?: string; status?: string }) => (
                     <tr
                       key={d.id}
-                      className={selected === d.id ? 'bg-white/5 cursor-pointer' : 'cursor-pointer'}
+                      className={selected === d.id ? 'bg-violet-50 cursor-pointer' : 'cursor-pointer hover:bg-slate-50'}
                       onClick={() => setSelected(d.id)}
                     >
                       <td>{d.name || d.id}</td>
@@ -423,15 +423,15 @@ function BmsPageInner() {
             {sgOk ? 'G1 APPLY READY' : sgOkToEnable ? 'G1 ARM READY' : 'G1 BLOCKED'}
           </StatusBadge>
         </div>
-        <p className="text-[12px] text-slate-300">
-          First writable point only: <span className="font-mono text-slate-100">ZONE-01.cooling_setpoint</span>. Expand to{' '}
+        <p className="text-[12px] text-slate-600">
+          First writable point only: <span className="font-mono text-slate-900">ZONE-01.cooling_setpoint</span>. Expand to{' '}
           <span className="font-mono">AHU-01.sat_setpoint</span> via env after verify success rate is stable.
         </p>
         <ul className="space-y-1.5 text-[12px]">
           {sgChecks.map((c) => (
             <li key={c.name} className="flex flex-wrap gap-2 items-baseline">
-              <span className={c.ok ? 'text-emerald-300' : 'text-amber-300'}>{c.ok ? 'PASS' : 'FAIL'}</span>
-              <span className="font-mono text-slate-200">{c.name}</span>
+              <span className={c.ok ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>{c.ok ? 'PASS' : 'FAIL'}</span>
+              <span className="font-mono text-slate-800">{c.name}</span>
               <span className="text-slate-500">{c.detail}</span>
             </li>
           ))}
@@ -444,7 +444,7 @@ function BmsPageInner() {
           </div>
         ) : null}
 
-        <div className="mt-2 text-sm text-slate-200">{st.write_enabled ? 'SUPERVISED WRITES ARMED' : 'READ-ONLY COMMISSIONING'}</div>
+        <div className="mt-2 text-sm text-slate-800 font-semibold">{st.write_enabled ? 'SUPERVISED WRITES ARMED' : 'READ-ONLY COMMISSIONING'}</div>
         <div className="text-[11px] font-mono text-slate-500 mt-1">
           HVAC_BMS_WRITE_ENABLED must be 1 · BMS WRITE: {st.write_enabled ? 'ENABLED' : 'DISABLED'} · allowlist:{' '}
           {(sg.allowlist || ['ZONE-01.cooling_setpoint']).join(', ')}
@@ -505,7 +505,7 @@ function BmsPageInner() {
           />
         ) : (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] font-mono text-slate-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] font-mono text-slate-600">
               <div>command_id: {activeCmd.command_id}</div>
               <div>status: {activeCmd.status}</div>
               <div>point: {activeCmd.point_id}</div>

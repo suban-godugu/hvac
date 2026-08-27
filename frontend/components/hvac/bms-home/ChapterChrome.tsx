@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
+import { EmptyState } from '@/components/hvac/EmptyState';
 import { PlantCanvas } from './PlantCanvas';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
@@ -47,6 +48,14 @@ export function ChapterChrome({ chapterId }: { chapterId: string }) {
       </div>
       {Object.keys(layers).length > 0 ? (
         <PlantCanvas layers={layers} selectedId={selected?.equipment_id} onSelect={setSelected} compact />
+      ) : home.isFetched ? (
+        <EmptyState
+          title="NO PLANT LAYERS"
+          detail="No equipment layers for this chapter yet. Map devices in Gateway or wait for plant inventory."
+          href="/platform/bms"
+          actionLabel="Open Gateway"
+          onRetry={() => void home.refetch()}
+        />
       ) : null}
     </div>
   );

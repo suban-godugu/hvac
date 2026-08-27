@@ -122,7 +122,7 @@ export const Sidebar: React.FC = () => {
   const om = opportunitiesForSection('operations');
 
   return (
-    <aside className="hvac-sidebar w-[17rem] flex flex-col select-none overflow-hidden bg-[#1a1a1d] text-slate-200">
+    <aside className="hvac-sidebar w-[17rem] flex flex-col select-none overflow-hidden bg-[#1a1a1d] text-slate-200 min-h-0">
       <div className="px-4 py-4 shrink-0 flex items-center gap-2.5">
         <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-400/30 flex items-center justify-center text-violet-300">
           <Building2 className="w-4 h-4" />
@@ -132,7 +132,7 @@ export const Sidebar: React.FC = () => {
           <div className="text-[10px] text-slate-500 mt-1">OEH · O1–O20</div>
         </div>
       </div>
-      <nav className="px-2.5 pb-3 space-y-0.5 flex-1 overflow-y-auto">
+      <nav className="px-2.5 pb-3 space-y-0.5 flex-1 min-h-0 overflow-y-auto overscroll-contain">
         <div className="px-3 pt-2 pb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-600 uppercase">Platform</div>
         <Link href="/overview" className={navItem(isActive('/overview') || isActive('/'))}>
           <LayoutDashboard className="w-4 h-4 shrink-0" />
@@ -236,7 +236,7 @@ export const Sidebar: React.FC = () => {
               href={o.route}
               id={o.id}
               label={o.shortLabel}
-              active={isActive(o.route) || (o.id === 'O10' && pathname.includes('outdoor-air'))}
+              active={isActive(o.route)}
             />
           ))}
         </Group>

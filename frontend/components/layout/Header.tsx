@@ -205,15 +205,15 @@ export const Header: React.FC = () => {
   }, [search]);
 
   return (
-    <header className="sticky top-0 z-40 h-[4.25rem] bg-[color:var(--bg-header)] backdrop-blur-xl px-4 lg:px-6 flex items-center select-none">
-      <div className="flex items-center justify-between w-full gap-3">
+    <header className="sticky top-0 z-40 min-h-[4.25rem] py-2 bg-[color:var(--bg-header)] backdrop-blur-xl px-4 lg:px-6 flex items-center select-none">
+      <div className="flex flex-wrap items-center justify-between w-full gap-2">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-violet-100 border border-violet-200 flex items-center justify-center text-violet-600">
             <Building2 className="w-4 h-4" />
           </div>
           <div className="min-w-0 hidden sm:block">
             <div className="text-[13px] font-semibold text-slate-900 tracking-tight leading-none">HVAC AI Control</div>
-            <div className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-1">
+            <div className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-1 max-w-[14rem] lg:max-w-[18rem]">
               <span className="text-slate-700 truncate">{buildingName}</span>
               <span className="text-slate-300">·</span>
               <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
@@ -222,27 +222,27 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-3xl mx-2">
-          <div className="bh-pill bh-pill-dark gap-2 shrink-0">
+        <div className="hidden md:flex items-center gap-2 flex-1 min-w-0 max-w-2xl xl:max-w-3xl mx-1">
+          <div className="bh-pill bh-pill-dark gap-2 shrink-0 max-w-[40%] xl:max-w-none">
             {dayIcon}
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span>
+            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="truncate text-[11px]">
               {facilityTime.weekday}, {facilityTime.dateStr}
             </span>
             <span className="text-slate-500">|</span>
-            <span className="tabular-nums">{facilityTime.timeStr || '—'}</span>
+            <span className="tabular-nums shrink-0">{facilityTime.timeStr || '—'}</span>
             <span className="text-slate-500 hidden xl:inline">
               · {oat != null ? `${oat.toFixed(1)}°C` : 'OAT —'} · {humidity != null ? `RH ${Math.round(humidity)}%` : 'RH —'}
             </span>
           </div>
-          <div className="relative flex-1 min-w-[12rem]">
-            <div className="bh-pill bh-pill-search w-full gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="bh-pill bh-pill-search w-full gap-2 min-w-0">
               <Search className="w-3.5 h-3.5 shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search O1–O20 opportunities…"
-                className="bg-transparent border-0 outline-none w-full text-[12px] text-violet-950 placeholder:text-violet-400/70"
+                placeholder="Search O1–O20…"
+                className="bg-transparent border-0 outline-none w-full min-w-0 text-[12px] text-violet-950 placeholder:text-violet-400/70"
                 aria-label="Search opportunities"
               />
             </div>
@@ -267,12 +267,12 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden lg:flex h-9 rounded-full border border-slate-200 bg-white p-0.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
+          <div className="hidden md:flex h-9 rounded-full border border-slate-200 bg-white p-0.5">
             <button
               type="button"
               onClick={() => setPlant('DATASET')}
-              className={`px-3 text-[10px] font-semibold tracking-wide rounded-full ${
+              className={`px-2.5 sm:px-3 text-[10px] font-semibold tracking-wide rounded-full ${
                 plantMode === 'DATASET' ? 'bg-amber-100 text-amber-800' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -281,7 +281,7 @@ export const Header: React.FC = () => {
             <button
               type="button"
               onClick={() => setPlant('LIVE_BMS')}
-              className={`px-3 text-[10px] font-semibold tracking-wide rounded-full ${
+              className={`px-2.5 sm:px-3 text-[10px] font-semibold tracking-wide rounded-full ${
                 plantMode === 'LIVE_BMS' ? 'bg-violet-100 text-violet-800' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -322,7 +322,7 @@ export const Header: React.FC = () => {
           <select
             value={agentMode}
             onChange={(e) => setAgentMode(e.target.value as AgentMode)}
-            className="h-9 rounded-full bg-white border border-slate-200 px-2.5 text-[11px] font-semibold text-violet-700 focus:outline-none"
+            className="h-9 rounded-full bg-white border border-slate-200 px-2 text-[11px] font-semibold text-violet-700 focus:outline-none max-w-[7.5rem]"
             aria-label="Agent mode"
           >
             <option value="AUTO">AUTO</option>
@@ -333,7 +333,7 @@ export const Header: React.FC = () => {
           <button type="button" onClick={toggleSafe} className={safeMode ? 'btn-danger' : 'btn-ghost'}>
             {safeMode ? 'SAFE ON' : 'SAFE'}
           </button>
-          <div className="hidden sm:flex items-center gap-2 pl-1">
+          <div className="hidden lg:flex items-center gap-2 pl-1">
             <div className="w-8 h-8 rounded-full bg-violet-500 text-white text-[11px] font-bold flex items-center justify-center">
               OP
             </div>
