@@ -101,6 +101,8 @@ class ConnectionManager:
                 .order_by(BmsConnectionDB.updated_at.desc())
                 .first()
             )
+        except Exception:
+            return None
         finally:
             db.close()
 

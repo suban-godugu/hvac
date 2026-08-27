@@ -31,7 +31,7 @@ def _worst_quality(qualities: List[str]) -> str:
 
 
 def _dominant_source(sources: List[str]) -> str:
-    cleaned = [(s or "").upper() for s in sources if s]
+    cleaned = [(s or "").upper() for s in sources if s and str(s).upper() not in ("UNKNOWN", "NONE", "WEATHER")]
     if not cleaned:
         return "UNKNOWN"
     if any(is_demo_source(s) for s in cleaned):

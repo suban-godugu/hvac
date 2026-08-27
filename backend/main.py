@@ -230,7 +230,10 @@ async def ready():
     db_ok = database_ok()
     wd = watchdog_status()
     ai = ai_watchdog_status()
-    points = latest_points(limit=1)
+    try:
+        points = latest_points(limit=1)
+    except Exception:
+        points = []
     tel_ok = True
     if points:
         tel_ok = points[0].get("classified") in ("LIVE", "SIMULATED", "STALE", "BAD", "MISSING")

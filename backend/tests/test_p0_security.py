@@ -21,9 +21,12 @@ os.environ["HVAC_DEPLOYMENT_MODE"] = "local"
 
 @pytest.fixture()
 def client():
+    from database.session import init_db
     from backend.main import app
 
-    return TestClient(app)
+    init_db()
+    with TestClient(app) as client:
+        yield client
 
 
 def test_healthz(client: TestClient):

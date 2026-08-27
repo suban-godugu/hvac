@@ -158,6 +158,8 @@ def latest_points(building_id: Optional[str] = None, limit: int = 50) -> List[Di
                 break
         cache_set(key, payload, _LATEST_TTL)
         return payload
+    except Exception:
+        return []
     finally:
         db.close()
 

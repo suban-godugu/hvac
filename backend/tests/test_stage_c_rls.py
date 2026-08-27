@@ -33,6 +33,7 @@ def client(monkeypatch):
     monkeypatch.setenv("HVAC_ALLOW_CREATE_ALL", "1")
     monkeypatch.setenv("HVAC_BMS_WRITE_ENABLED", "0")
     monkeypatch.setenv("HVAC_RLS_MIN_UPDATES", "5")
+    monkeypatch.setenv("HVAC_PLANT_MODE_PERSIST", "0")
     from backend.ai.rls.runner import reset_debounce
     from backend.ai.rls.service import clear_error_rings
     from backend.services.timeseries_buffer import clear as clear_buffer
@@ -54,7 +55,8 @@ def client(monkeypatch):
     reset_debounce()
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 def test_rls_engine_converges():

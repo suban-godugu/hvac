@@ -225,9 +225,12 @@ def write_point(point_id: str, value: float, priority: int = 10, context: Option
     if adapter is None:
         return _deny("BMS_OFFLINE", "Production BMS gateway is not connected.", point_id, value)
     try:
-        return adapter.execute_write(ident or point_id, float(value), int(priority or 10))
+        outcome = adapter.execute_write(ident or point_id, float(value), int(priority or 10))
     except Exception as exc:
         return _deny("BMS_CONNECTION_FAILED", str(exc), point_id, value)
+    if outcome is None:
+        return _deny("BMS_CONNECTION_FAILED", "BMS adapter returned no write outcome.", point_id, value)
+    return outcome
 
 
 def write_points(writes: List[Dict[str, Any]]) -> List[WriteOutcome]:

@@ -19,7 +19,7 @@ os.environ["HVAC_SAFE_MODE"] = "0"
 os.environ["HVAC_BMS_WRITE_ENABLED"] = "0"
 os.environ["HVAC_USE_SIMULATION"] = "0"
 os.environ["HVAC_BMS_LAB"] = "1"
-os.environ["HVAC_PLANT_MODE_PERSIST"] = "1"
+os.environ["HVAC_PLANT_MODE_PERSIST"] = "0"
 os.environ["HVAC_EMERGENCY_STOP"] = "0"
 os.environ["HVAC_MANUAL_OVERRIDE"] = "0"
 os.environ["HVAC_RULE_ENGINE_STRICT"] = "0"
@@ -41,6 +41,7 @@ POINT = "ZONE-01.cooling_setpoint"
 def client(monkeypatch):
     monkeypatch.setenv("HVAC_ALLOW_CREATE_ALL", "1")
     monkeypatch.setenv("HVAC_BMS_LAB", "1")
+    monkeypatch.setenv("HVAC_PLANT_MODE_PERSIST", "1")
     monkeypatch.setenv("HVAC_BMS_WRITE_ENABLED", "0")
     monkeypatch.setenv("HVAC_SAFE_MODE", "0")
     monkeypatch.setenv("HVAC_RLS_POST_WRITE_LAG_SECONDS", "0")
@@ -97,7 +98,13 @@ def client(monkeypatch):
     set_plant_mode("DATASET")
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        from backend.bms.telemetry_reader import stop_reader
+        from backend.bms.simulation_telemetry import stop_simulation_telemetry
+
+        stop_reader()
+        stop_simulation_telemetry()
+        yield client
 
 
 def _commission_writable(client: TestClient) -> None:
@@ -162,11 +169,11 @@ def test_h1_verify_triggers_rls_feedback(client: TestClient, monkeypatch):
     monkeypatch.setenv("HVAC_RLS_POST_WRITE_LAG_SECONDS", "0")
     called = []
 
-    def fake_tick(**kwargs):
-        called.append(kwargs)
-        return {"updated": 1, "wrote_setpoints": False}
+    def fake_feedback(command_id, *, zone_id, building_id=None):
+        called.append({"command_id": command_id, "zone_id": zone_id, "building_id": building_id})
+        return {"ok": True, "updated": 1, "wrote_setpoints": False}
 
-    monkeypatch.setattr("backend.ai.rls.runner.tick", fake_tick)
+    monkeypatch.setattr("backend.ai.rls.feedback.run_feedback", fake_feedback)
     monkeypatch.setattr("backend.ai.safe_rl.outcome.measure_after_verify", lambda *_a, **_k: {"ok": True})
 
     _commission_writable(client)
@@ -181,16 +188,18 @@ def test_h1_verify_triggers_rls_feedback(client: TestClient, monkeypatch):
 
 def test_h1_verify_fail_no_rls(client: TestClient, monkeypatch):
     monkeypatch.setenv("HVAC_BMS_WRITE_ENABLED", "1")
+    monkeypatch.setenv("HVAC_RLS_POST_WRITE_LAG_SECONDS", "0")
     called = []
     monkeypatch.setattr(
-        "backend.ai.rls.runner.tick",
-        lambda **k: called.append(k) or {"updated": 1},
+        "backend.ai.rls.feedback.run_feedback",
+        lambda *a, **k: called.append({"args": a, **k}) or {"ok": True},
     )
     _commission_writable(client)
     assert client.post("/api/platform/bms/write-enable", json={"confirm": True}).status_code == 200
     cid = _propose_cmd(old_v=24.0, new_v=24.5)
     assert client.post(f"/api/platform/commands/{cid}/approve").status_code == 200
     assert client.post(f"/api/platform/commands/{cid}/apply").status_code == 200
+    called.clear()
 
     from backend.bms.connection_manager import get_connection_manager
     from backend.bms.base import PointReading, utc_now

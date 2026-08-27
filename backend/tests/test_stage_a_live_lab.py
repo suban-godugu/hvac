@@ -18,7 +18,7 @@ os.environ["HVAC_BMS_WRITE_ENABLED"] = "0"
 os.environ["HVAC_USE_SIMULATION"] = "0"
 os.environ["HVAC_BMS_LAB"] = "1"
 os.environ["HVAC_BMS_PROTOCOL"] = "bacnet"
-os.environ["HVAC_PLANT_MODE_PERSIST"] = "1"
+os.environ["HVAC_PLANT_MODE_PERSIST"] = "0"
 
 
 @pytest.fixture()
@@ -54,7 +54,8 @@ def client(monkeypatch):
     set_plant_mode("DATASET")
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 def _commission_stage_a(client: TestClient) -> dict:

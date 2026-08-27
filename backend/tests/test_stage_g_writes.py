@@ -20,7 +20,7 @@ os.environ["HVAC_BMS_WRITE_ENABLED"] = "0"
 os.environ["HVAC_USE_SIMULATION"] = "0"
 os.environ["HVAC_BMS_LAB"] = "1"
 os.environ["HVAC_BMS_PROTOCOL"] = "bacnet"
-os.environ["HVAC_PLANT_MODE_PERSIST"] = "1"
+os.environ["HVAC_PLANT_MODE_PERSIST"] = "0"
 os.environ["HVAC_EMERGENCY_STOP"] = "0"
 os.environ["HVAC_MANUAL_OVERRIDE"] = "0"
 os.environ["HVAC_RULE_ENGINE_STRICT"] = "0"
@@ -89,7 +89,13 @@ def client(monkeypatch):
     set_plant_mode("DATASET")
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        from backend.bms.telemetry_reader import stop_reader
+        from backend.bms.simulation_telemetry import stop_simulation_telemetry
+
+        stop_reader()
+        stop_simulation_telemetry()
+        yield client
 
 
 def _commission_writable(client: TestClient) -> None:

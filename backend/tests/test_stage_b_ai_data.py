@@ -30,6 +30,9 @@ def _now() -> datetime:
 def client(monkeypatch):
     monkeypatch.setenv("HVAC_ALLOW_CREATE_ALL", "1")
     monkeypatch.setenv("HVAC_TELEMETRY_PURGE", "0")
+    monkeypatch.setenv("HVAC_PLANT_MODE_PERSIST", "0")
+    monkeypatch.setenv("HVAC_PLANT_MODE", "DATASET")
+    monkeypatch.setenv("HVAC_BMS_MODE", "simulation")
     from backend.agents.scheduling_supervisory.gateway import reset_bms_gateway
     from backend.bms.connection_manager import reset_connection_manager
     from backend.services.timeseries_buffer import clear as clear_buffer
@@ -50,7 +53,8 @@ def client(monkeypatch):
     reset_bms_gateway()
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 def test_buffer_push_and_window():

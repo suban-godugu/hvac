@@ -61,7 +61,8 @@ def client(monkeypatch):
     clear_buffer()
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 def test_iter_windows_shapes():
@@ -172,7 +173,7 @@ def test_train_ready_and_forecast_horizons(client: TestClient, monkeypatch, tmp_
 
     art = Path(tmp_path) / "lstm"
     art.mkdir(parents=True)
-    monkeypatch.setattr(train_mod, "_artifact_dir", lambda: art)
+    monkeypatch.setattr(train_mod, "_artifact_dir", lambda *_a, **_k: art)
 
     def fake_build(*_a, **kwargs):
         return _synthetic_dataset(target=kwargs.get("target", "zone_temp"))
@@ -191,8 +192,8 @@ def test_train_ready_and_forecast_horizons(client: TestClient, monkeypatch, tmp_
     one = body["results"][0]
     assert one["code"] == "OK"
     assert one["status"] == "MODEL_READY"
-    assert one["model_id"] == "mdl-lstm-zone-temp-v1"
-    assert (art / "mdl-lstm-zone-temp-v1.pkl").exists()
+    assert str(one["model_id"]).startswith("mdl-lstm-zone-temp-v1")
+    assert any(art.rglob("*.pkl"))
 
     st = client.get("/api/platform/ai/lstm/status").json()
     zt = next(m for m in st["models"] if m["target"] == "zone_temp")

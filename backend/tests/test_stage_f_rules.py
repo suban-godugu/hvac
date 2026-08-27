@@ -77,7 +77,8 @@ def client(monkeypatch):
     set_safe_mode(False)
     from backend.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 def test_safe_mode_rejects(monkeypatch):
