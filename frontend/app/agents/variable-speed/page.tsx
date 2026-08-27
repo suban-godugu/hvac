@@ -55,9 +55,10 @@ export default function VariableSpeedDashboardPage() {
   return (
     <SectionDashboard
       title="Variable Speed Systems"
-      subtitle="Secondary chilled water pumping and condenser head-pressure control."
+      subtitle="Secondary chilled water pumping and condenser head-pressure control. OEH §5"
       icon={Zap}
       badge="O14–O16"
+      chapterId="variable-speed"
       kpiEmptyText={error ? 'DATA SOURCE ERROR' : 'NO DATA'}
       kpis={[
         { label: 'LIVE opportunities', value: `${liveCount} / 3` },

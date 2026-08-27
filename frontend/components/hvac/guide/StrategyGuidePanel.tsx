@@ -17,6 +17,7 @@ import {
 } from '@/components/hvac/EngineeringChart';
 import { GUIDE_CATS, guideCatForOpportunityId, type GuideCat } from '@/lib/hvac/guideTypes';
 import { evaluateOehGuide, fetchOehCatalog, officialGuideId } from '@/lib/hvac/oehGuideApi';
+import { mappingHref } from '@/lib/hvac/dashboardHome';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -146,11 +147,52 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
               <span className="text-sm font-bold">{item.pct}%</span>
-              <span className="text-[8px] text-slate-500 uppercase">OEH potential</span>
+              <span className="text-[8px] text-slate-500 uppercase">GUIDE_POTENTIAL</span>
             </div>
           </div>
         </div>
       </div>
+
+      <div className="kpi-tile kpi-tile-flush">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Principle</div>
+        <p className="text-sm text-slate-300 leading-relaxed">{item.principle}</p>
+      </div>
+      <div className="kpi-tile kpi-tile-flush">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Equipment — map in Gateway</div>
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
+          {equip.map((eq) => (
+            <li key={eq}>
+              <Link href={mappingHref()} className="text-sm text-cyan-200/90 hover:text-cyan-100">
+                {eq}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="kpi-tile kpi-tile-flush">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Current practice</div>
+        <p className="text-sm text-slate-300 leading-relaxed">{item.practice}</p>
+      </div>
+      <div className="kpi-tile kpi-tile-flush">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Potential (GUIDE_POTENTIAL)</div>
+        <p className="text-sm text-slate-300 leading-relaxed">
+          Up to {item.pct}% of {item.scope} — individual, non-cumulative. Not measured LIVE kW.
+        </p>
+      </div>
+      {item.scenario ? (
+        <div className="kpi-tile kpi-tile-flush" style={{ background: cat.dim, borderColor: cat.color }}>
+          <div className="text-[10px] font-mono uppercase tracking-wider mb-1" style={{ color: cat.color }}>
+            Case study · OEH example (not this building)
+          </div>
+          <p className="text-sm text-slate-200 leading-relaxed">{item.scenario}</p>
+        </div>
+      ) : null}
+      {item.recommendation ? (
+        <div className="kpi-tile kpi-tile-flush">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Recommended action</div>
+          <p className="text-sm text-slate-300 leading-relaxed">{item.recommendation}</p>
+        </div>
+      ) : null}
 
       <div className="kpi-tile kpi-tile-flush">
         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Guide comparison (simulated) — {item.scope}</div>
@@ -284,30 +326,6 @@ export function StrategyGuidePanel({ opportunityId }: { opportunityId: string })
             </div>
             <div className="text-[9px] font-mono uppercase text-slate-500 mt-1">Projected / 5 years</div>
           </div>
-        </div>
-      </div>
-
-      {item.scenario ? (
-        <div className="kpi-tile kpi-tile-flush" style={{ background: cat.dim, borderColor: cat.color }}>
-          <div className="text-[10px] font-mono uppercase tracking-wider mb-1" style={{ color: cat.color }}>
-            Field result · OEH example (not this building)
-          </div>
-          <p className="text-sm text-slate-200 leading-relaxed">{item.scenario}</p>
-        </div>
-      ) : null}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="kpi-tile kpi-tile-flush">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Control Principle</div>
-          <p className="text-sm text-slate-300 leading-relaxed">{item.principle}</p>
-        </div>
-        <div className="kpi-tile kpi-tile-flush">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Typical current practice</div>
-          <p className="text-sm text-slate-300 leading-relaxed">{item.practice}</p>
-        </div>
-        <div className="kpi-tile kpi-tile-flush">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Recommended action</div>
-          <p className="text-sm text-slate-300 leading-relaxed">{item.recommendation}</p>
         </div>
       </div>
 

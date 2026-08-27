@@ -1,340 +1,157 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { KPIGrid } from '@/components/hvac/KPIGrid';
-import { OpportunityCard } from '@/components/hvac/OpportunityCard';
-import { StatusBadge } from '@/components/hvac/StatusBadge';
-import { EmptyState } from '@/components/hvac/EmptyState';
-import {
-  HVAC_SECTIONS,
-  fleetOpportunityCards,
-  type HvacSectionId,
-} from '@/lib/hvac/opportunityConfig';
-import {
-  LayoutDashboard,
-  CalendarClock,
-  Gauge,
-  Wind,
-  Zap,
-  Wrench,
-  Activity,
-  ShieldCheck,
-  ArrowRight,
-  Server,
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { LIVE_POLL_MS, PLATFORM_POLL_MS } from '@/lib/hvac/poll';
-import { fetchSchedulingDashboard, fetchStatus } from '@/lib/api';
+import { Activity, LayoutDashboard, Server, ShieldCheck, Zap } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
+import { OpportunityCard } from '@/components/hvac/OpportunityCard';
+import { AlertRail, AssetRail, AssetRailEmpty, KpiRow, PlantCanvas, SystemsHub } from '@/components/hvac/bms-home';
 import { hvacFetch } from '@/lib/api/client';
-import { fetchPlantControlDashboard } from '@/lib/plantControlApi';
-import { fetchVentilationDashboard } from '@/lib/hvac/ventilationApi';
-import { fetchO14Dashboard } from '@/lib/hvac/o14Api';
-import { fetchO15Dashboard } from '@/lib/hvac/o15Api';
-import { fetchO16Dashboard } from '@/lib/hvac/o16Api';
-import { fetchOmDashboard } from '@/lib/hvac/omApi';
-import { fleetCardFor } from '@/lib/hvac/fleetCardMetrics';
-
-const SECTION_ICON: Record<HvacSectionId, typeof CalendarClock> = {
-  scheduling: CalendarClock,
-  'plant-control': Gauge,
-  ventilation: Wind,
-  'variable-speed': Zap,
-  operations: Wrench,
-};
-
-function livePointText(p?: { value?: unknown; unit?: string; quality?: string } | null, telStatus?: string) {
-  if (!p || p.value == null || p.value === '') return 'NO DATA';
-  if (String(p.quality || '').toUpperCase() === 'BAD') return 'NO DATA';
-  if (String(telStatus || '').toUpperCase() === 'STALE') return `STALE ${p.value}${p.unit ? ` ${p.unit}` : ''}`;
-  return `${p.value}${p.unit ? ` ${p.unit}` : ''}`;
-}
-
-function LivePlant({
-  plant,
-  telStatus,
-}: {
-  plant?: {
-    chillers?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    ahus?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    pumps?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    vfds?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    condenser_water?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    hot_water?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    zones?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-    vavs?: { equipment_id: string; points: Record<string, { value?: unknown; unit?: string; quality?: string }> }[];
-  };
-  telStatus?: string;
-}) {
-  const groups = [
-    { title: 'Chillers', rows: plant?.chillers || [] },
-    { title: 'AHUs', rows: plant?.ahus || [] },
-    { title: 'Pumps', rows: plant?.pumps || [] },
-    { title: 'VFDs', rows: plant?.vfds || [] },
-    { title: 'Condenser water', rows: plant?.condenser_water || [] },
-    { title: 'Hot water', rows: plant?.hot_water || [] },
-    { title: 'Zones', rows: plant?.zones || [] },
-    { title: 'VAVs', rows: plant?.vavs || [] },
-  ];
-  const empty = groups.every((g) => g.rows.length === 0);
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-          {String(telStatus || '').toUpperCase().includes('SIMUL') ? 'Simulated plant' : 'Live plant'}
-        </h2>
-        <span className="text-[11px] font-mono text-slate-600">{telStatus || 'NO DATA'}</span>
-      </div>
-      {empty ? (
-        <EmptyState
-          title="NO DATA"
-          detail="Synthetic plant points have not published yet. Start the API with HVAC_USE_SIMULATION=1, or map a live BMS."
-          href="/platform/bms"
-          actionLabel="Open BMS mapping"
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {groups.map((g) =>
-            g.rows.map((row) => (
-              <div key={row.equipment_id} className="glass-card p-4 space-y-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[10px] font-semibold tracking-[0.14em] uppercase text-slate-500">{g.title}</div>
-                  <div className="text-[10px] font-mono text-slate-600">{row.equipment_id}</div>
-                </div>
-                <div className="text-sm font-semibold text-slate-50">{row.equipment_id}</div>
-                <div className="text-[11px] font-mono text-slate-400 space-y-1.5">
-                  {Object.keys(row.points || {}).length === 0 ? (
-                    <div className="text-amber-200/80">NO DATA</div>
-                  ) : (
-                    Object.entries(row.points).map(([k, p]) => (
-                      <div key={k} className="flex justify-between gap-2">
-                        <span className="text-slate-500 truncate">{k}</span>
-                        <span className="text-slate-100">{livePointText(p, telStatus)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
+import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
+import { getOpportunity } from '@/lib/hvac/opportunityConfig';
+import type { DashboardHome, DashboardOpportunity, PlantEquipment } from '@/lib/hvac/dashboardHome';
 
 export default function FleetOverviewPage() {
-  const buildings = useQuery({
-    queryKey: ['buildings'],
+  const home = useQuery({
+    queryKey: ['dashboard-home'],
     queryFn: async () => {
-      const res = await hvacFetch('/api/v1/buildings');
+      const res = await hvacFetch('/api/platform/dashboard/home');
       if (!res.ok) throw new Error('DATA SOURCE ERROR');
-      return res.json();
-    },
-    retry: 1,
-  });
-  const platform = useQuery({
-    queryKey: ['platform-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/platform/status', { cache: 'no-store' });
-      if (!res.ok) throw new Error('DATA SOURCE ERROR');
-      return res.json();
+      return res.json() as Promise<DashboardHome>;
     },
     refetchInterval: PLATFORM_POLL_MS,
   });
-  const { data: cycleData } = useQuery({
-    queryKey: ['supervisory-status'],
-    queryFn: fetchStatus,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const scheduling = useQuery({
-    queryKey: ['scheduling-dashboard'],
-    queryFn: fetchSchedulingDashboard,
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const plantDash = useQuery({
-    queryKey: ['plant-control-dashboard'],
-    queryFn: fetchPlantControlDashboard,
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const ventDash = useQuery({
-    queryKey: ['ventilation-dashboard'],
-    queryFn: async () => (await fetchVentilationDashboard()).data,
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const o14Dash = useQuery({
-    queryKey: ['o14-dashboard'],
-    queryFn: () => fetchO14Dashboard().catch(() => null),
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const o15Dash = useQuery({
-    queryKey: ['o15-dashboard'],
-    queryFn: () => fetchO15Dashboard().catch(() => null),
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const o16Dash = useQuery({
-    queryKey: ['o16-dashboard'],
-    queryFn: () => fetchO16Dashboard().catch(() => null),
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-  const omDash = useQuery({
-    queryKey: ['om-dashboard'],
-    queryFn: async () => (await fetchOmDashboard()).data,
-    retry: 1,
-    refetchInterval: LIVE_POLL_MS,
-  });
-
-  const plant = useQuery({
-    queryKey: ['bms-plant'],
-    queryFn: async () => {
-      const res = await fetch('/api/platform/bms/plant', { cache: 'no-store' });
-      if (!res.ok) return { chillers: [], ahus: [], pumps: [], vfds: [], condenser_water: [], hot_water: [], zones: [], vavs: [] };
-      return res.json();
-    },
-    refetchInterval: LIVE_POLL_MS,
-  });
-
-  const buildingName = platform.data?.building?.name || buildings.data?.buildings?.[0]?.name;
-  const verifiedKw = cycleData?.savings_summary?.verified_kw;
-  const comfortPct =
-    cycleData?.savings_summary?.comfort_compliance_pct ?? scheduling.data?.comfortCompliancePct ?? null;
-  const totalPlantTons =
-    cycleData?.plant?.total_tons ??
-    (scheduling.data?.opportunities || [])
-      .map((o: { secondaryMetrics?: { label?: string; value?: string | number | null }[] }) =>
-        (o.secondaryMetrics || []).find((m) => /plant load/i.test(String(m.label || '')))
-      )
-      .map((m: { value?: string | number | null } | undefined) => {
-        if (!m || m.value == null) return null;
-        const n = Number(String(m.value).replace(/[^\d.-]/g, ''));
-        return Number.isFinite(n) ? n : null;
-      })
-      .find((n: number | null) => n != null) ?? null;
-  const verifiedDisplay =
-    verifiedKw != null
-      ? `+${Number(verifiedKw).toFixed(1)} kW`
-      : scheduling.data?.verifiedSavings
-        ? String(scheduling.data.verifiedSavings)
-        : null;
-  const cards = fleetOpportunityCards();
-  const fleetSources = {
-    plant: plantDash.data,
-    vent: ventDash.data,
-    o14: o14Dash.data as Record<string, unknown> | null,
-    o15: o15Dash.data as Record<string, unknown> | null,
-    o16: o16Dash.data as Record<string, unknown> | null,
-    om: omDash.data,
-  };
+  const data = home.data;
+  const layers = data?.layers;
+  const allOpps: DashboardOpportunity[] = useMemo(
+    () => (data?.chapters || []).flatMap((c) => c.opportunities),
+    [data?.chapters]
+  );
+  const firstRow = useMemo(() => {
+    for (const rows of Object.values(layers || {})) {
+      if (rows?.[0]) return rows[0];
+    }
+    return null;
+  }, [layers]);
+  const [selected, setSelected] = useState<PlantEquipment | null>(null);
+  const active = selected || firstRow;
+  const plantEmpty = !layers || Object.values(layers).every((rows) => !rows?.length);
+  const tel = String(data?.telemetry?.status || data?.provenance || 'NO DATA');
+  const kpis = data?.kpis || {};
+  const energy = data?.energy?.points || [];
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
       <PageHeader
         icon={LayoutDashboard}
-        title="HVAC Central Optimization Platform"
-        subtitle={`${buildingName || 'NO BUILDING IN DATABASE'} · O1–O20 fleet overview`}
-        badge="FLEET"
+        title="Building operations"
+        subtitle={`${data?.building?.name || 'NO BUILDING IN DATABASE'} · OEH / AIRAH O1–O20 Table 1`}
+        badge={tel}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge tone={toneForStatus(data?.bms?.status)}>BMS {data?.bms?.status || 'DISCONNECTED'}</StatusBadge>
+            <StatusBadge tone={toneForStatus(tel)}>TEL {tel}</StatusBadge>
+          </div>
+        }
       />
 
-      <KPIGrid
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-        emptyText="NO DATA"
+      <KpiRow
         items={[
           {
-            label: 'Cooling Demand',
-            value: totalPlantTons != null ? `${Number(totalPlantTons).toFixed(1)} Tons` : null,
-            detail: platform.data?.bmsConnected
-              ? 'From supervisory plant telemetry'
-              : String(platform.data?.telemetry?.status || '').toUpperCase().includes('SIMUL')
-                ? 'SYNTHETIC DATASET — not LIVE BMS'
-                : 'BMS DISCONNECTED — not LIVE',
+            label: 'Plant / HVAC load',
+            value: kpis.coolingTons != null ? `${Number(kpis.coolingTons).toFixed(1)} Tons` : null,
+            detail: tel === 'SIMULATED' ? 'DATASET — not LIVE BMS' : 'From supervisory plant telemetry',
             icon: Server,
           },
           {
-            label: 'Verified Energy Shed',
-            value: verifiedDisplay,
-            detail: verifiedKw != null
-              ? 'Verified supervisory energy impact'
-              : scheduling.data?.verifiedSavings
-                ? 'From scheduling O1 verified savings'
-                : 'Verified supervisory energy impact',
-            icon: Zap,
-          },
-          {
-            label: 'Comfort Standard',
-            value: comfortPct != null ? `${Number(comfortPct).toFixed(1)}%` : null,
-            detail: 'ASHRAE 55 envelope',
+            label: 'Comfort',
+            value: kpis.comfortPct != null ? `${Number(kpis.comfortPct).toFixed(1)}%` : null,
+            detail: 'Measured comfort envelope',
             icon: ShieldCheck,
           },
           {
-            label: 'Supervisory State',
-            value: platform.data?.bmsConnected ? 'BMS CONNECTED' : 'BMS DISCONNECTED',
-            detail: `Worker ${platform.data?.watchdog?.alive ? 'OK' : 'HOLD'}`,
+            label: 'Verified kW',
+            value: kpis.verifiedKw != null ? `+${Number(kpis.verifiedKw).toFixed(1)} kW` : null,
+            detail: 'Supervisory M&V only — not GUIDE_POTENTIAL',
+            icon: Zap,
+          },
+          {
+            label: 'Issues',
+            value: kpis.alertCount != null ? String(kpis.alertCount) : null,
+            detail: 'Stale / BAD / BMS / O19',
             icon: Activity,
           },
         ]}
       />
 
-      <LivePlant plant={plant.data} telStatus={platform.data?.telemetry?.status} />
+      {plantEmpty ? (
+        <AssetRailEmpty />
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+          <div className="xl:col-span-7">
+            <PlantCanvas layers={layers} selectedId={active?.equipment_id} onSelect={setSelected} />
+          </div>
+          <div className="xl:col-span-5">
+            <AssetRail selected={active} opportunities={allOpps} telStatus={tel} />
+          </div>
+        </div>
+      )}
 
-      {HVAC_SECTIONS.map((section) => {
-        const Icon = SECTION_ICON[section.id];
-        const sectionCards = cards.filter((o) => o.section === section.id);
-        return (
-          <section key={section.id} className="space-y-3">
-            <div className="glass-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="w-8 h-8 rounded-lg border border-cyan-400/20 bg-cyan-500/10 text-cyan-300 flex items-center justify-center">
-                    <Icon className="w-4 h-4" />
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <section className="glass-card p-4 xl:col-span-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Energy</div>
+          {energy.length === 0 ? (
+            <p className="text-[12px] text-slate-500 mt-3">AWAITING TELEMETRY — no energy series yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-1 font-mono text-[11px] text-slate-400 max-h-40 overflow-y-auto">
+              {energy.slice(-12).map((p, i) => (
+                <li key={`${p.t}-${i}`} className="flex justify-between gap-2">
+                  <span className="truncate">{String(p.t || '')}</span>
+                  <span className="text-slate-200">
+                    {p.v} {data?.energy?.unit}
                   </span>
-                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{section.title}</h2>
-                  <StatusBadge tone="neutral" pulse={false}>
-                    {sectionCards.map((c) => c.id).join(' · ')}
-                  </StatusBadge>
-                </div>
-              </div>
-              <Link href={section.href} className="btn-primary shrink-0">
-                <span>Open dashboard</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {sectionCards.map((def) => {
-                const sched =
-                  section.id === 'scheduling'
-                    ? scheduling.data?.opportunities?.find(
-                        (o: { opportunityId?: string }) => String(o.opportunityId || '').toUpperCase() === def.id
-                      )
-                    : null;
-                const metrics = fleetCardFor(def.id, { ...fleetSources, scheduling: sched || null });
-                return (
-                  <OpportunityCard
-                    key={def.id}
-                    code={def.id}
-                    title={def.title}
-                    href={def.route}
-                    status={metrics.status}
-                    fields={metrics.fields}
-                    impactLabel={metrics.impactLabel}
-                    impactValue={metrics.impactValue}
-                    telemetryLabel={metrics.telemetryLabel}
-                    emptyTitle="AWAITING TELEMETRY"
-                    emptyDetail={def.description}
-                    maxFields={4}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <div className="xl:col-span-4">
+          <AlertRail alerts={data?.alerts} />
+        </div>
+        <div className="xl:col-span-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-3">Guide chapters</div>
+          <SystemsHub chapters={data?.chapters} variant="compact" />
+          <p className="text-[9px] font-mono text-slate-600 mt-2">GUIDE_POTENTIAL · non-cumulative · not measured LIVE</p>
+        </div>
+      </div>
+
+      <details className="glass-card p-4">
+        <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+          All opportunities
+        </summary>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+          {allOpps.map((o) => {
+            const def = getOpportunity(o.id);
+            return (
+              <OpportunityCard
+                key={o.id}
+                code={o.id}
+                title={def?.title || o.title || o.id}
+                href={o.href || def?.route || '/agents'}
+                telemetryLabel={o.telemetry}
+                emptyTitle="AWAITING TELEMETRY"
+                emptyDetail={o.practice || def?.description}
+                fields={[
+                  { label: 'Table 1', value: o.applicability || 'Unmapped' },
+                  { label: 'Guide', value: o.guide_savings_potential || 'GUIDE_POTENTIAL' },
+                ]}
+                maxFields={4}
+              />
+            );
+          })}
+        </div>
+      </details>
     </div>
   );
 }

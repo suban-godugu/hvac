@@ -151,9 +151,10 @@ export default function OperationsMaintenanceDashboardPage() {
   return (
     <SectionDashboard
       title="Operations & Maintenance"
-      subtitle="Energy planning, workforce awareness, maintenance efficiency, and HVAC control-system governance."
+      subtitle="Energy planning, workforce awareness, maintenance efficiency, and HVAC control-system governance. OEH §6"
       icon={Wrench}
       badge="O17–O20"
+      chapterId="operations"
       kpiEmptyText={empty}
       kpis={[
         {

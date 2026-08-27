@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Radio } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -19,14 +20,52 @@ type StageGCommand = {
   opportunity?: string;
 };
 
-export default function BmsPage() {
+type BmsTab = 'status' | 'connection' | 'devices' | 'points' | 'mapping' | 'writes';
+
+function BmsPageInner() {
   const qc = useQueryClient();
+  const search = useSearchParams();
+  const tabParam = (search.get('tab') || 'status').toLowerCase();
+  const tab: BmsTab = (['status', 'connection', 'devices', 'points', 'mapping', 'writes'] as BmsTab[]).includes(tabParam as BmsTab)
+    ? (tabParam as BmsTab)
+    : 'status';
+  const setTab = (next: BmsTab) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', next);
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+    setTabState(next);
+  };
+  const [tabState, setTabState] = useState<BmsTab>(tab);
   const [protocol, setProtocol] = useState('bacnet');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('47808');
   const [message, setMessage] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [mapForm, setMapForm] = useState({ equipment_id: 'AHU-01', canonical_point: 'supply_air_temperature', bms_point_id: '', direction: 'READ' });
+  const [mapForm, setMapForm] = useState({
+    equipment_id: search.get('equipment') || 'AHU-01',
+    canonical_point: search.get('point') || 'supply_air_temperature',
+    bms_point_id: search.get('bms_point_id') || '',
+    direction: 'READ',
+  });
+  const activeTab = tabState;
+
+  useEffect(() => {
+    setTabState(tab);
+  }, [tab]);
+
+  useEffect(() => {
+    const eq = search.get('equipment');
+    const pt = search.get('point');
+    const bmsId = search.get('bms_point_id');
+    if (eq || pt || bmsId) {
+      setMapForm((f) => ({
+        ...f,
+        equipment_id: eq || f.equipment_id,
+        canonical_point: pt || f.canonical_point,
+        bms_point_id: bmsId || f.bms_point_id,
+      }));
+    }
+  }, [search]);
 
   const status = useQuery({
     queryKey: ['bms-status'],
@@ -124,14 +163,53 @@ export default function BmsPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <PageHeader icon={Radio} title="BMS Connection" subtitle="Commissioning console. Discovery and mapping only." badge="READ-ONLY" />
+      <PageHeader icon={Radio} title="Gateway" subtitle="Commissioning: connect, discover, and map canonical points so O1–O20 can run." badge="READ-ONLY" />
+      <div className="flex flex-wrap gap-1">
+        {(['status', 'connection', 'devices', 'points', 'mapping', 'writes'] as BmsTab[]).map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded-md border ${
+              activeTab === id ? 'border-cyan-400/50 text-cyan-100 bg-cyan-500/10' : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+            onClick={() => setTab(id)}
+          >
+            {id === 'status'
+              ? 'Status'
+              : id === 'connection'
+                ? 'Connection'
+                : id === 'devices'
+                  ? 'Devices'
+                  : id === 'points'
+                    ? 'Points'
+                    : id === 'mapping'
+                      ? 'Mapping'
+                      : 'Writes'}
+          </button>
+        ))}
+      </div>
       <div className="rounded-xl border border-amber-400/25 bg-amber-500/[0.08] px-4 py-3 text-[12px] text-amber-100" role="status">
         READ-ONLY COMMISSIONING — BMS writes are disabled until Stage G prerequisites pass and ENABLE WRITES is confirmed.
         {st.labMode ? ' Lab BACnet (HVAC_BMS_LAB=1) is active — LIVE_BMS path, not dataset simulation.' : ''}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <section className="glass-card p-5 space-y-4 xl:col-span-5">
+      {activeTab === 'status' ? (
+        <section className="glass-card p-5 space-y-3">
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <StatusBadge tone={toneForStatus(st.status)}>{st.status || 'UNKNOWN'}</StatusBadge>
+            <StatusBadge tone="neutral">{st.plantMode || '—'}</StatusBadge>
+            <StatusBadge tone={st.write_enabled ? 'live' : 'warn'}>{st.write_enabled ? 'WRITES ARMED' : 'WRITES OFF'}</StatusBadge>
+          </div>
+          <div className="text-[12px] font-mono text-slate-400">
+            Devices {deviceRows.length} · Mappings {mapRows.length} · Protocol {st.protocol || '—'}
+          </div>
+          <div className="text-[12px] text-slate-400">Last error: {st.last_error || st.lastError || '—'}</div>
+          {message ? <div className="text-[12px] text-slate-300 font-mono">{message}</div> : null}
+        </section>
+      ) : null}
+
+      {activeTab === 'connection' ? (
+        <section className="glass-card p-5 space-y-4">
           <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">BMS Connection</div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <label className="text-[11px] text-slate-400 space-y-1.5">
@@ -183,8 +261,10 @@ export default function BmsPage() {
             <StatusBadge tone={st.write_enabled ? 'live' : 'warn'}>{st.write_enabled ? 'WRITES ARMED' : 'WRITES OFF'}</StatusBadge>
           </div>
         </section>
+      ) : null}
 
-        <section className="glass-card p-5 space-y-3 xl:col-span-7">
+      {activeTab === 'devices' || activeTab === 'points' ? (
+        <section className="glass-card p-5 space-y-3">
           <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">Discovered devices</div>
           {deviceRows.length === 0 ? (
             <EmptyState title="No devices" detail="Connect and discover to list BACnet devices." />
@@ -244,8 +324,9 @@ export default function BmsPage() {
             </div>
           ) : null}
         </section>
-      </div>
+      ) : null}
 
+      {activeTab === 'mapping' ? (
       <section className="glass-card p-5 space-y-3">
         <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">Point mapping</div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
@@ -329,7 +410,10 @@ export default function BmsPage() {
           </table>
         )}
       </section>
+      ) : null}
 
+      {activeTab === 'writes' ? (
+      <>
       <section className="glass-card p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Stage G — controlled writes</div>
@@ -466,6 +550,16 @@ export default function BmsPage() {
           </div>
         )}
       </section>
+      </>
+      ) : null}
     </div>
+  );
+}
+
+export default function BmsPage() {
+  return (
+    <Suspense fallback={<div className="text-[11px] font-mono text-slate-500">Loading Gateway…</div>}>
+      <BmsPageInner />
+    </Suspense>
   );
 }

@@ -17,6 +17,7 @@ import { EngineeringLimitsModal } from '@/components/scheduling/EngineeringLimit
 import { Cpu } from 'lucide-react';
 import { StatusBadge, toneForStatus } from '@/components/hvac/StatusBadge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ChapterChrome } from '@/components/hvac/bms-home';
 
 export default function SchedulingAgentPage() {
   const dash = useQuery({
@@ -45,7 +46,7 @@ export default function SchedulingAgentPage() {
       <PageHeader
         icon={Cpu}
         title="Scheduling & Supervisory Agent"
-        subtitle="O1–O4 supervisory optimization"
+        subtitle="O1–O4 supervisory optimization · OEH §2"
         badge={agentMode ? String(agentMode) : undefined}
         actions={
           data?.telemetryFreshness ? (
@@ -55,6 +56,7 @@ export default function SchedulingAgentPage() {
           ) : null
         }
       />
+      <ChapterChrome chapterId="scheduling" />
 
       <TopKPIs data={data} backendOffline={offline} />
 

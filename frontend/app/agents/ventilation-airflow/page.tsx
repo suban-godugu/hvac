@@ -109,9 +109,10 @@ export default function VentilationAirflowDashboardPage() {
   return (
     <SectionDashboard
       title="Ventilation & Air Flow Optimizations"
-      subtitle="Economy-cycle free cooling, demand-controlled ventilation, and night-time thermal purge."
+      subtitle="Economy-cycle free cooling, demand-controlled ventilation, and night-time thermal purge. OEH §4"
       icon={Wind}
       badge="O10–O13"
+      chapterId="ventilation"
       kpiEmptyText={empty}
       kpis={[
         { label: 'Provenance', value: loading && !data ? null : tel?.state || null, detail: tel?.source || null },

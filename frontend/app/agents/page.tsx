@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/hvac/EmptyState';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
 import { useLiveTelemetry } from '@/lib/hvac/liveTelemetryStore';
+import { AlertRail, SystemsHub } from '@/components/hvac/bms-home';
+import type { DashboardHome } from '@/lib/hvac/dashboardHome';
 import { getOpportunity } from '@/lib/hvac/opportunityConfig';
 
 const RAIL: Record<string, string> = {
@@ -43,12 +45,18 @@ function controlArmed(label: string) {
 
 export default function AgentsPage() {
   const live = useLiveTelemetry();
+  const home = useQuery({
+    queryKey: ['dashboard-home'],
+    queryFn: async () => (await hvacFetch('/api/platform/dashboard/home')).json(),
+    refetchInterval: PLATFORM_POLL_MS,
+  });
   const { data } = useQuery({
     queryKey: ['agent-center'],
     queryFn: async () => (await hvacFetch('/api/agents')).json(),
     refetchInterval: PLATFORM_POLL_MS,
   });
   const groups = data?.groups || [];
+  const dash = home.data as DashboardHome | undefined;
   const pageControl = (() => {
     for (const g of groups as { controlAvailability?: string; cards?: { control?: string }[] }[]) {
       const ga = controlLabel(g.controlAvailability);
@@ -65,8 +73,8 @@ export default function AgentsPage() {
     <div className="space-y-6 pb-12">
       <PageHeader
         icon={Users}
-        title="Agent Control Center"
-        subtitle="ENGINE is the decision method; MODEL is the ML registry label. SIM WRITE ENABLED is synthetic-plant only — live BMS stays gated. O9 / O17–O20 show REVIEW / ADVISORY / MAINTENANCE, not writes."
+        title="Systems"
+        subtitle="OEH / AIRAH chapters §2–§6. ENGINE is the decision method; MODEL is the ML registry label. O9 / O17–O20 show REVIEW / ADVISORY / MAINTENANCE, not writes."
         badge="O1–O20"
       />
       <div className="flex flex-wrap gap-2">
@@ -76,6 +84,8 @@ export default function AgentsPage() {
           {pageControl}
         </StatusBadge>
       </div>
+      <AlertRail alerts={dash?.alerts} />
+      <SystemsHub chapters={dash?.chapters} variant="full" />
       <div className="space-y-6">
         {groups.map(
           (g: {

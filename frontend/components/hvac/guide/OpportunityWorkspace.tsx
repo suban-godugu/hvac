@@ -43,7 +43,9 @@ export function OpportunityWorkspace({
         className="studio-chrome w-full min-w-0"
         style={{ borderTopWidth: 3, borderTopColor: cat.color }}
       >
-        <OpportunityHeader def={def} live={live} model={model} bms={bms} ml={ml} mlModel={mlModel} mlConfidence={mlConfidence} actions={actions} />
+        <Suspense fallback={<div className="kpi-tile kpi-tile-flush text-[11px] font-mono text-slate-500">Loading header…</div>}>
+          <OpportunityHeader def={def} live={live} model={model} bms={bms} ml={ml} mlModel={mlModel} mlConfidence={mlConfidence} actions={actions} />
+        </Suspense>
         <OpportunityViewTabs tab={tab} onChange={setTab} color={cat.color} />
       </div>
       {tab === 'guide' ? (

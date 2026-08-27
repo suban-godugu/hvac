@@ -40,9 +40,10 @@ export default function PlantControlDashboardPage() {
   return (
     <SectionDashboard
       title="Plant Control Parameter Optimizations"
-      subtitle="Duct static pressure, grouped temperature reset, and EXV retrofit."
+      subtitle="Duct static pressure, grouped temperature reset, and EXV retrofit. OEH §3"
       icon={Sliders}
       badge="O5–O9"
+      chapterId="plant-control"
       kpis={[
         { label: 'Total Power Shed', value: data?.total_power_shed_kw != null ? `${data.total_power_shed_kw} kW` : null },
         { label: 'Daily Energy', value: data?.daily_energy_saved_kwh != null ? `${data.daily_energy_saved_kwh} kWh` : null },

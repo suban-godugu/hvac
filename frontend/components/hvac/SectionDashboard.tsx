@@ -4,6 +4,7 @@ import React from 'react';
 import { OpportunityCard, OpportunityCardField } from './OpportunityCard';
 import { KPIGrid } from './KPIGrid';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ChapterChrome } from '@/components/hvac/bms-home';
 import { OpportunityDef } from '@/lib/hvac/opportunityConfig';
 import { LucideIcon } from 'lucide-react';
 
@@ -23,6 +24,7 @@ export interface SectionDashboardProps {
     icon?: LucideIcon;
   }[];
   kpiEmptyText?: string;
+  chapterId?: string;
   cards: {
     def: OpportunityDef;
     status?: string | null;
@@ -45,11 +47,15 @@ export const SectionDashboard: React.FC<SectionDashboardProps> = ({
   badge,
   kpis,
   kpiEmptyText,
+  chapterId,
   cards,
   children,
 }) => (
   <div className="space-y-6 pb-12">
     <PageHeader icon={icon} title={title} subtitle={subtitle} badge={badge} />
+    {chapterId ? <ChapterChrome chapterId={chapterId} /> : (
+      <p className="text-[11px] font-mono text-slate-500 -mt-2">OEH / AIRAH chapter · GUIDE_POTENTIAL is not measured LIVE kW</p>
+    )}
 
     {kpis && kpis.length > 0 && <KPIGrid items={kpis} emptyText={kpiEmptyText} />}
 

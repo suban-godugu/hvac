@@ -124,15 +124,15 @@ export const Sidebar: React.FC = () => {
         <div className="px-2 pt-2 pb-1 text-[10px] font-semibold tracking-[0.16em] text-slate-600 uppercase">Platform</div>
         <Link href="/overview" className={item(isActive('/overview') || isActive('/'))}>
           <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
-          Fleet Overview
+          Dashboard
         </Link>
         <Link href="/agents" className={item(isActive('/agents'))}>
           <Users className="w-3.5 h-3.5 shrink-0" />
-          Agent Control
+          Systems
         </Link>
         <Link href="/platform/bms" className={item(pathname.startsWith('/platform/bms'))}>
           <Radio className="w-3.5 h-3.5 shrink-0" />
-          BMS
+          Gateway
         </Link>
         <Link href="/platform/telemetry" className={item(pathname.startsWith('/platform/telemetry'))}>
           <Activity className="w-3.5 h-3.5 shrink-0" />

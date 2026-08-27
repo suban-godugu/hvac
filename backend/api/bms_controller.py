@@ -306,6 +306,13 @@ async def command_rollback(command_id: str):
     return {"ok": True, "status": reason, "command_id": command_id}
 
 
+@safety_router.get("/dashboard/home")
+async def dashboard_home():
+    from backend.services.dashboard_home_service import dashboard_home as _home
+
+    return _home()
+
+
 @safety_router.get("/safety/evaluate")
 @safety_router.post("/safety/evaluate")
 async def safety_evaluate(req: Optional[SafetyEvaluateRequest] = None):
