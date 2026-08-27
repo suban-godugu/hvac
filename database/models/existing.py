@@ -896,6 +896,8 @@ from database.models_platform import (  # noqa: E402,F401
     ZoneDB,
     ControlCommandDB,
     AgentRunDB,
+    RlsModelStateDB,
+    SafeRlDecisionDB,
 )
 
 from database.models_bms import (  # noqa: E402,F401

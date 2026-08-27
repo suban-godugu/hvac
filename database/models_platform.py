@@ -126,3 +126,61 @@ class AgentRunDB(Base):
     finished_at = Column(DateTime, nullable=True)
     input_json = Column(JSON, nullable=True)
     output_json = Column(JSON, nullable=True)
+
+
+class RlsModelStateDB(Base):
+    """Online RLS parameters (Stage C). Separate LIVE vs SIMULATION rows."""
+
+    __tablename__ = "rls_model_state"
+    id = Column(String, primary_key=True)
+    building_id = Column(String, nullable=False, index=True)
+    zone_id = Column(String, nullable=False, index=True)
+    model_key = Column(String, nullable=False, index=True)  # zone_thermal | hvac_power
+    source_mode = Column(String, nullable=False, index=True)  # LIVE_BMS | SIMULATION
+    theta_json = Column(JSON, nullable=True)
+    p_json = Column(JSON, nullable=True)
+    lambda_ = Column("lambda", Float, nullable=True)
+    n_updates = Column(Integer, default=0)
+    last_error = Column(Float, nullable=True)
+    rmse_ewma = Column(Float, nullable=True)
+    last_predicted = Column(Float, nullable=True)
+    last_actual = Column(Float, nullable=True)
+    last_sample_ts = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, index=True)
+    status = Column(String, default="WARMING")  # WARMING | READY
+    version = Column(Integer, default=0)
+    __table_args__ = (
+        Index(
+            "uq_rls_zone_model_source",
+            "building_id",
+            "zone_id",
+            "model_key",
+            "source_mode",
+            unique=True,
+        ),
+    )
+
+
+class SafeRlDecisionDB(Base):
+    """Stage E/H Safe-RL recommend decisions + realized reward after verify."""
+
+    __tablename__ = "safe_rl_decisions"
+    id = Column(String, primary_key=True)
+    building_id = Column(String, nullable=True, index=True)
+    zone_id = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False, default="PROPOSED", index=True)
+    chosen_action_json = Column(JSON, nullable=True)
+    rejected_actions_json = Column(JSON, nullable=True)
+    constraints_json = Column(JSON, nullable=True)
+    state_snapshot_json = Column(JSON, nullable=True)
+    score = Column(Float, nullable=True)
+    confidence = Column(Float, nullable=True)
+    mapped_command_ids_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    # Stage H3 — closed-loop reward (filled after VERIFIED)
+    realized_reward = Column(Float, nullable=True)
+    reward_energy = Column(Float, nullable=True)
+    reward_comfort = Column(Float, nullable=True)
+    reward_equipment = Column(Float, nullable=True)
+    measured_at = Column(DateTime, nullable=True)
+    command_id = Column(String, nullable=True, index=True)

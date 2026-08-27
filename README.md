@@ -107,6 +107,20 @@ Platform pages: `/overview`, `/agents`, `/platform/bms`, `/platform/telemetry`, 
 | `HVAC_BMS_WRITE_ENABLED=0` | Default. All writes return `WRITE_DISABLED` (Phase 1). |
 | `HVAC_SAFE_MODE=1` | Blocks every automatic write. |
 
+### Stage A lab BACnet (LIVE_BMS without a physical gateway)
+
+Set plant mode to **Live BMS**, keep writes off, then:
+
+```powershell
+$env:HVAC_BMS_LAB = "1"
+$env:HVAC_BMS_PROTOCOL = "bacnet"
+$env:HVAC_BMS_WRITE_ENABLED = "0"
+$env:PYTHONPATH = "."
+python scripts/stage_a_commission.py
+```
+
+This uses the in-repo lab gateway (`LIVE_BMS` stamps — not the dataset simulator). For a real BACnet device: `HVAC_BMS_LAB=0`, `pip install -r backend/requirements-bacnet.txt`, set `HVAC_BACNET_HOST`.
+
 A live write additionally requires: **LIVE + GOOD + FRESH** telemetry, BMS connected, engineering limits, safety contract, operating mode, and operational approval.
 
 ---
@@ -237,8 +251,18 @@ Production BMS hosts (`HVAC_BACNET_HOST`, `HVAC_MQTT_URL`, `HVAC_OPCUA_URL`) sta
 
 - **Alembic is the schema authority:** `alembic upgrade head`
 - Do not enable `HVAC_ALLOW_CREATE_ALL` in production
-- Production target: Timescale hypertables on `canonical_telemetry` keyed by `(building_id, point_id, timestamp)`
-- Retention: `backend/workers/retention_worker.py` via the job worker. Physical deletes need `HVAC_TELEMETRY_PURGE=1`
+- Production target: Timescale hypertables on `canonical_telemetry` keyed by `(building_id, point_id, timestamp)` — migration `0016` creates the composite index and attempts `create_hypertable` when Timescale is available
+- Retention: `backend/workers/retention_worker.py` via the job worker. Physical deletes need `HVAC_TELEMETRY_PURGE=1` (Compose `job-worker` enables purge). See [`database/RETENTION.md`](database/RETENTION.md)
+- Stage B APIs: `GET /api/platform/timeseries/window`, `GET /api/platform/ai/normalized`
+- Stage C RLS (online, no setpoint writes): `GET /api/platform/ai/rls/status`, `/params`, `/errors` — learning health also on `/ml`
+- Stage D LSTM (advisory forecast, no setpoint writes): optional `pip install -r backend/requirements-lstm.txt`; `GET /api/platform/ai/lstm/sequence|forecast|status`, `POST /api/platform/ai/lstm/train` — chart on `/ml`
+- Stage E Safe RL (NB2 Optimizer recommend, no setpoint writes): `POST /api/platform/ai/safe-rl/recommend`, `GET /api/platform/ai/safe-rl/status|decisions` — NB2 card on `/ml`; maps winner to O\* `control_commands` as PROPOSED
+- Stage F Rule Engine (checklist gate): `POST /api/platform/rules/evaluate`, `GET /api/platform/rules/audit` — R01–R10 must APPROVE before `command_writer` / apply; checklist on `/ml`
+- Stage G controlled writes (Level 7, one point): `GET /api/platform/bms/stage-g/status`; `POST /api/platform/commands/{id}/approve|apply` (plus existing verify/rollback). Lifecycle: Safe RL/O* **PROPOSED** → operator **APPROVED** → Rule Engine → allowlist → `command_writer` → lab/real BMS → verify → auto-rollback on fail. First point: `ZONE-01.cooling_setpoint` (`HVAC_STAGE_G_WRITABLE_POINTS`). After `verify_stats.expand_ready` (window × `HVAC_STAGE_G_VERIFY_SUCCESS_MIN`), ops may append `AHU-01.sat_setpoint` to the env allowlist — process never auto-mutates env. Recommend remains write-free. UI: `/platform/bms` Stage G panel.
+- Stage H closed loop (Level 8 ≈95%): VERIFIED → lagged RLS learn (`HVAC_RLS_POST_WRITE_*`); job_worker LSTM retrain with versioned registry (`GET /api/platform/ai/lstm/models`); Safe RL realized reward + offline weight update; edge Compose profile (`docker compose --profile edge up …`) + `GET /api/platform/edge/status` cloud-down proof; per-AI watchdogs on `/readyz`. Data contract: [`docs/NB2-DATA-CONTRACT.md`](docs/NB2-DATA-CONTRACT.md). Still one-point Stage G writes; recommend never writes alone.
+- Residuals closed: CI runs Stage A–H suites; `HVAC_SAFE_RL_TICK_SECONDS>0` → job_worker recommend tick; RLS error rings persist in `platform_settings`; `HVAC_LSTM_REQUIRE_TORCH`; `/ml` energy forecast toggle.
+
+**Edge vs cloud:** Gateway runs protocols + RLS/LSTM/Safe RL infer + Rules + Stage G control (+ local job_worker retrain). Cloud URL is optional (`HVAC_CLOUD_URL`); when unreachable, local Sense→Optimize→Control continues.
 
 ---
 
@@ -251,7 +275,7 @@ pip install -r backend/requirements.txt pytest
 python -m pytest backend/tests -q
 ```
 
-CI currently runs a focused subset: `test_p0_security`, `test_runtime_contracts`, `test_oeh_guide`.
+CI currently runs: `test_p0_security`, `test_runtime_contracts`, `test_oeh_guide`, plus Stage A–H (`test_stage_a` … `test_stage_h_closed_loop`).
 
 Frontend:
 

@@ -1,0 +1,6 @@
+# Optional PyTorch CPU for Stage D LSTM train/infer.
+#   pip install -r backend/requirements-lstm.txt
+#
+# Without torch: GET /api/platform/ai/lstm/sequence and /status still work;
+# POST /train returns TORCH_REQUIRED.
+torch>=2.0.0

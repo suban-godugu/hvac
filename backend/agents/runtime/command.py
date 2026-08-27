@@ -34,6 +34,7 @@ def _dump(row: ControlCommandDB) -> Dict[str, Any]:
         "applied_at": row.applied_at.isoformat() if row.applied_at else None,
         "verified_at": row.verified_at.isoformat() if row.verified_at else None,
         "rollback_at": row.rollback_at.isoformat() if row.rollback_at else None,
+        "payload_json": row.payload_json,
     }
 
 

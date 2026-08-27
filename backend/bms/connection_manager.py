@@ -55,12 +55,22 @@ def is_simulation_mode() -> bool:
         return _mode() in ("simulation", "simulator", "sim")
 
 
+def lab_mode_enabled() -> bool:
+    """Stage A in-repo lab BACnet. Never used as a dataset/sim fallback."""
+    return (os.getenv("HVAC_BMS_LAB") or "").strip().lower() in ("1", "true", "yes")
+
+
 def make_adapter(protocol: str) -> BMSGateway:
     key = (protocol or "bacnet").strip().lower()
     if key in _FACTORY_OVERRIDES:
         factory = _FACTORY_OVERRIDES[key]
         inst = factory() if callable(factory) else factory
         return inst
+    # Lab gateway only on LIVE_BMS path (connect already blocks DATASET).
+    if lab_mode_enabled() and not is_simulation_mode() and key in ("bacnet", "bacnet/ip", "bacnet-ip"):
+        from backend.bms.lab_bacnet_gateway import LabBacnetGateway
+
+        return LabBacnetGateway()
     cls = ADAPTERS.get(key)
     if cls is None:
         raise BmsAdapterError(CONNECTION_FAILED, f"Unsupported BMS protocol: {protocol}")

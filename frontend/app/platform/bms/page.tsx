@@ -9,6 +9,16 @@ import { EmptyState } from '@/components/hvac/EmptyState';
 import { hvacFetch } from '@/lib/api/client';
 import { PLATFORM_POLL_MS } from '@/lib/hvac/poll';
 
+type StageGCheck = { name: string; ok: boolean; detail?: string };
+type StageGCommand = {
+  command_id?: string;
+  point_id?: string;
+  status?: string;
+  old_value?: number | null;
+  new_value?: number | null;
+  opportunity?: string;
+};
+
 export default function BmsPage() {
   const qc = useQueryClient();
   const [protocol, setProtocol] = useState('bacnet');
@@ -21,6 +31,11 @@ export default function BmsPage() {
   const status = useQuery({
     queryKey: ['bms-status'],
     queryFn: async () => (await hvacFetch('/api/platform/bms/status')).json(),
+    refetchInterval: PLATFORM_POLL_MS,
+  });
+  const stageG = useQuery({
+    queryKey: ['bms-stage-g'],
+    queryFn: async () => (await hvacFetch('/api/platform/bms/stage-g/status?point_id=ZONE-01.cooling_setpoint')).json(),
     refetchInterval: PLATFORM_POLL_MS,
   });
   const devices = useQuery({
@@ -76,7 +91,30 @@ export default function BmsPage() {
       qc.invalidateQueries();
     });
 
+  const cmdAction = (commandId: string, action: 'approve' | 'apply' | 'verify' | 'rollback') =>
+    hvacFetch(`/api/platform/commands/${commandId}/${action}`, { method: 'POST' }).then(async (res) => {
+      const body = await res.json();
+      const detail = body.detail;
+      setMessage(
+        body.message ||
+          body.status ||
+          body.code ||
+          (typeof detail === 'object' ? detail?.message || detail?.code : detail) ||
+          (res.ok ? action.toUpperCase() : 'FAILED'),
+      );
+      qc.invalidateQueries();
+    });
+
   const st = status.data || {};
+  const sg = stageG.data || {};
+  const sgChecks: StageGCheck[] = Array.isArray(sg.checks) ? sg.checks : [];
+  const sgCommands: StageGCommand[] = Array.isArray(sg.commands) ? sg.commands : [];
+  const sgOk = Boolean(sg.ok);
+  const sgOkToEnable = Boolean(sg.ok_to_enable ?? sg.ok);
+  const activeCmd =
+    sgCommands.find((c) =>
+      ['PROPOSED', 'APPROVED', 'APPLIED', 'VERIFYING', 'VERIFICATION_FAILED'].includes(String(c.status || '').toUpperCase()),
+    ) || sgCommands[0];
   const deviceRows = devices.data?.devices || [];
   const pointRows = points.data?.points || [];
   const mapRows = mappings.data?.mappings || [];
@@ -88,164 +126,141 @@ export default function BmsPage() {
     <div className="space-y-6 pb-12">
       <PageHeader icon={Radio} title="BMS Connection" subtitle="Commissioning console. Discovery and mapping only." badge="READ-ONLY" />
       <div className="rounded-xl border border-amber-400/25 bg-amber-500/[0.08] px-4 py-3 text-[12px] text-amber-100" role="status">
-        READ-ONLY COMMISSIONING — BMS writes are disabled. Map only discovered points.
+        READ-ONLY COMMISSIONING — BMS writes are disabled until Stage G prerequisites pass and ENABLE WRITES is confirmed.
+        {st.labMode ? ' Lab BACnet (HVAC_BMS_LAB=1) is active — LIVE_BMS path, not dataset simulation.' : ''}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-      <section className="glass-card p-5 space-y-4 xl:col-span-5">
-        <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">BMS Connection</div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <label className="text-[11px] text-slate-400 space-y-1.5">
-            Protocol
-            <select
-              value={protocol}
-              onChange={(e) => {
-                const next = e.target.value;
-                setProtocol(next);
-                setPort(defaultPorts[next] || '47808');
-              }}
-              className="form-control"
-            >
-              <option value="bacnet">BACnet/IP</option>
-              <option value="modbus">Modbus TCP</option>
-              <option value="mqtt">MQTT</option>
-              <option value="rest">REST</option>
-            </select>
-          </label>
-          <label className="text-[11px] text-slate-400 space-y-1.5">
-            Host
-            <input value={host} onChange={(e) => setHost(e.target.value)} placeholder="gateway IP" className="form-control" />
-          </label>
-          <label className="text-[11px] text-slate-400 space-y-1.5">
-            Port
-            <input value={port} onChange={(e) => setPort(e.target.value)} className="form-control" />
-          </label>
-          <div className="flex items-end pb-0.5">
-            <StatusBadge tone={toneForStatus(st.status)}>{st.status || 'DISCONNECTED'}</StatusBadge>
+        <section className="glass-card p-5 space-y-4 xl:col-span-5">
+          <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">BMS Connection</div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <label className="text-[11px] text-slate-400 space-y-1.5">
+              Protocol
+              <select
+                value={protocol}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setProtocol(next);
+                  setPort(defaultPorts[next] || '47808');
+                }}
+                className="form-control"
+              >
+                <option value="bacnet">BACnet/IP</option>
+                <option value="modbus">Modbus TCP</option>
+                <option value="mqtt">MQTT</option>
+                <option value="rest">REST</option>
+              </select>
+            </label>
+            <label className="text-[11px] text-slate-400 space-y-1.5">
+              Host
+              <input value={host} onChange={(e) => setHost(e.target.value)} placeholder="gateway IP" className="form-control" />
+            </label>
+            <label className="text-[11px] text-slate-400 space-y-1.5">
+              Port
+              <input value={port} onChange={(e) => setPort(e.target.value)} className="form-control" />
+            </label>
+            <div className="flex items-end gap-2">
+              <button type="button" className="btn-primary" onClick={() => connect(false)} disabled={!host}>
+                CONNECT
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => connect(true)} disabled={!host}>
+                TEST
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="text-[11px] font-mono text-slate-500">
-          Last connected: {st.last_connected_at || '—'} · Last error: {st.last_error || '—'} · Protocol: {st.protocol || protocol}
-        </div>
-        {!livePlant && (
-          <div className="text-[11px] text-amber-200">
-            Switch the header to Live BMS before CONNECT. Dataset mode never opens a production gateway.
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-ghost" onClick={() => post.mutate('/api/platform/bms/discover')}>
+              DISCOVER
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => post.mutate('/api/platform/bms/disconnect')}>
+              DISCONNECT
+            </button>
           </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-ghost" onClick={() => connect(true)}>
-            TEST CONNECTION
-          </button>
-          <button type="button" className="btn-primary" onClick={() => connect(false)} disabled={!livePlant || !host.trim()}>
-            CONNECT
-          </button>
-          <button type="button" className="btn-ghost" onClick={() => post.mutate('/api/platform/bms/disconnect')}>
-            DISCONNECT
-          </button>
-          <button type="button" className="btn-ghost" onClick={() => post.mutate('/api/platform/bms/discover')}>
-            DISCOVER
-          </button>
-        </div>
-        {message && <div className="text-[11px] font-mono text-amber-300">{message}</div>}
-      </section>
+          {message ? <div className="text-[12px] text-slate-300 font-mono">{message}</div> : null}
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <StatusBadge tone={toneForStatus(st.status)}>{st.status || 'UNKNOWN'}</StatusBadge>
+            <StatusBadge tone="neutral">{st.plantMode || '—'}</StatusBadge>
+            <StatusBadge tone={st.write_enabled ? 'live' : 'warn'}>{st.write_enabled ? 'WRITES ARMED' : 'WRITES OFF'}</StatusBadge>
+          </div>
+        </section>
 
-      <div className="xl:col-span-7 space-y-4">
-      <section className="glass-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Devices</div>
-          <StatusBadge tone="neutral" pulse={false}>
-            {deviceRows.length} devices
-          </StatusBadge>
-        </div>
-        {deviceRows.length === 0 ? (
-          <EmptyState title="0 devices" detail="Connect and discover. Nothing is invented until the gateway returns devices." />
-        ) : (
-          <table className="bms-table">
-            <thead>
-              <tr>
-                <th>Device</th>
-                <th>Identifier</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deviceRows.map((d: { id: string; name?: string; device_identifier: string; device_type?: string; status?: string; points?: number }) => (
-                <tr key={d.id} className="cursor-pointer" onClick={() => setSelected(d.id)}>
-                  <td className="text-slate-100">{d.name || d.device_identifier}</td>
-                  <td className="font-mono text-slate-400">{d.device_identifier}</td>
-                  <td>{d.device_type || '—'}</td>
-                  <td>{d.status || '—'}</td>
-                  <td>{d.points ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      <section className="glass-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Points</div>
-          <StatusBadge tone="neutral" pulse={false}>
-            {pointRows.length} points
-          </StatusBadge>
-        </div>
-        {pointRows.length === 0 ? (
-          <EmptyState title="0 points" detail="Select a discovered device. Values stay empty until the BMS reports them." />
-        ) : (
-          <table className="bms-table">
-            <thead>
-              <tr>
-                <th>Point</th>
-                <th>Object Type</th>
-                <th>Instance</th>
-                <th>Unit</th>
-                <th>R/W</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pointRows.map((p: { id: string; point_identifier: string; object_type?: string; object_instance?: string; unit?: string; readable?: boolean; writable?: boolean; current_value?: number | null }) => (
-                <tr key={p.id} className="cursor-pointer" onClick={() => setMapForm((f) => ({ ...f, bms_point_id: p.id }))}>
-                  <td className="font-mono">{p.point_identifier}</td>
-                  <td>{p.object_type || '—'}</td>
-                  <td>{p.object_instance || '—'}</td>
-                  <td>{p.unit || '—'}</td>
-                  <td>
-                    {p.readable ? 'R' : ''}
-                    {p.writable ? 'W' : ''}
-                  </td>
-                  <td>{p.current_value == null ? '—' : p.current_value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-      </div>
+        <section className="glass-card p-5 space-y-3 xl:col-span-7">
+          <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">Discovered devices</div>
+          {deviceRows.length === 0 ? (
+            <EmptyState title="No devices" detail="Connect and discover to list BACnet devices." />
+          ) : (
+            <div className="overflow-auto max-h-64">
+              <table className="bms-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deviceRows.map((d: { id: string; name?: string; device_type?: string; status?: string }) => (
+                    <tr
+                      key={d.id}
+                      className={selected === d.id ? 'bg-white/5 cursor-pointer' : 'cursor-pointer'}
+                      onClick={() => setSelected(d.id)}
+                    >
+                      <td>{d.name || d.id}</td>
+                      <td>{d.device_type || '—'}</td>
+                      <td>{d.status || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {selected ? (
+            <div className="space-y-2">
+              <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Points</div>
+              <div className="overflow-auto max-h-48">
+                <table className="bms-table">
+                  <thead>
+                    <tr>
+                      <th>Identifier</th>
+                      <th>Unit</th>
+                      <th>Writable</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pointRows.map((p: { id: string; point_identifier?: string; unit?: string; writable?: boolean }) => (
+                      <tr
+                        key={p.id}
+                        className="cursor-pointer"
+                        onClick={() => setMapForm((f) => ({ ...f, bms_point_id: p.id }))}
+                      >
+                        <td className="font-mono text-[11px]">{p.point_identifier}</td>
+                        <td>{p.unit || '—'}</td>
+                        <td>{p.writable ? 'Y' : 'N'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
 
-      <section className="glass-card p-4 space-y-3">
-        <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Mapping</div>
+      <section className="glass-card p-5 space-y-3">
+        <div className="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">Point mapping</div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-          <input className="form-control" value={mapForm.equipment_id} onChange={(e) => setMapForm({ ...mapForm, equipment_id: e.target.value })} placeholder="AHU-01" />
           <select
             className="form-control"
             value={`${mapForm.equipment_id}.${mapForm.canonical_point}`}
             onChange={(e) => {
-              const [eq, ...rest] = e.target.value.split('.');
-              setMapForm({
-                ...mapForm,
-                equipment_id: eq || mapForm.equipment_id,
-                canonical_point: rest.join('.') || mapForm.canonical_point,
-              });
+              const [equipment_id, ...rest] = e.target.value.split('.');
+              setMapForm({ ...mapForm, equipment_id, canonical_point: rest.join('.') });
             }}
           >
-            {(catalog.length
-              ? catalog
-              : [{ qualified: 'AHU-01.supply_air_temperature', equipment_id: 'AHU-01', canonical_point: 'supply_air_temperature' }]
+            {(
+              catalog.length
+                ? catalog
+                : [{ qualified: 'AHU-01.supply_air_temperature', equipment_id: 'AHU-01', canonical_point: 'supply_air_temperature' }]
             ).map((c: { qualified?: string; canonical_point: string; equipment_id?: string }) => {
               const q = c.qualified || `${c.equipment_id}.${c.canonical_point}`;
               return (
@@ -255,12 +270,23 @@ export default function BmsPage() {
               );
             })}
           </select>
-          <input className="form-control" value={mapForm.bms_point_id} onChange={(e) => setMapForm({ ...mapForm, bms_point_id: e.target.value })} placeholder="discovered point id" />
+          <input
+            className="form-control"
+            value={mapForm.bms_point_id}
+            onChange={(e) => setMapForm({ ...mapForm, bms_point_id: e.target.value })}
+            placeholder="discovered point id"
+          />
           <select className="form-control" value={mapForm.direction} onChange={(e) => setMapForm({ ...mapForm, direction: e.target.value })}>
             <option value="READ">READ</option>
             <option value="READ_WRITE">READ/WRITE</option>
           </select>
-          <button type="button" className="btn-primary" onClick={saveMap} disabled={!mapForm.bms_point_id} title={!mapForm.bms_point_id ? 'Select a discovered BMS point first' : undefined}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={saveMap}
+            disabled={!mapForm.bms_point_id}
+            title={!mapForm.bms_point_id ? 'Select a discovered BMS point first' : undefined}
+          >
             SAVE MAPPING
           </button>
         </div>
@@ -279,43 +305,88 @@ export default function BmsPage() {
               </tr>
             </thead>
             <tbody>
-              {mapRows.map((m: { id: string; qualified?: string; point_identifier?: string; unit?: string; direction?: string; current_value?: number | null; quality?: string }) => (
-                <tr key={m.id}>
-                  <td className="font-mono">{m.qualified}</td>
-                  <td>{m.point_identifier || '—'}</td>
-                  <td>{m.unit || '—'}</td>
-                  <td>{m.direction}</td>
-                  <td>{m.current_value == null ? '—' : m.current_value}</td>
-                  <td>{m.quality || '—'}</td>
-                </tr>
-              ))}
+              {mapRows.map(
+                (m: {
+                  id: string;
+                  qualified?: string;
+                  point_identifier?: string;
+                  unit?: string;
+                  direction?: string;
+                  current_value?: number | null;
+                  quality?: string;
+                }) => (
+                  <tr key={m.id}>
+                    <td className="font-mono">{m.qualified}</td>
+                    <td>{m.point_identifier || '—'}</td>
+                    <td>{m.unit || '—'}</td>
+                    <td>{m.direction}</td>
+                    <td>{m.current_value == null ? '—' : m.current_value}</td>
+                    <td>{m.quality || '—'}</td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         )}
       </section>
 
-      <section className="glass-card p-4 space-y-2">
-        <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Commissioning status</div>
+      <section className="glass-card p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Stage G — controlled writes</div>
+          <StatusBadge tone={sgOk || sgOkToEnable ? 'live' : 'warn'}>
+            {sgOk ? 'G1 APPLY READY' : sgOkToEnable ? 'G1 ARM READY' : 'G1 BLOCKED'}
+          </StatusBadge>
+        </div>
+        <p className="text-[12px] text-slate-300">
+          First writable point only: <span className="font-mono text-slate-100">ZONE-01.cooling_setpoint</span>. Expand to{' '}
+          <span className="font-mono">AHU-01.sat_setpoint</span> via env after verify success rate is stable.
+        </p>
+        <ul className="space-y-1.5 text-[12px]">
+          {sgChecks.map((c) => (
+            <li key={c.name} className="flex flex-wrap gap-2 items-baseline">
+              <span className={c.ok ? 'text-emerald-300' : 'text-amber-300'}>{c.ok ? 'PASS' : 'FAIL'}</span>
+              <span className="font-mono text-slate-200">{c.name}</span>
+              <span className="text-slate-500">{c.detail}</span>
+            </li>
+          ))}
+          {!sgChecks.length ? <li className="text-slate-500">Loading Stage G checklist…</li> : null}
+        </ul>
+        {sg.verify_stats ? (
+          <div className="text-[11px] font-mono text-slate-500">
+            verify success {sg.verify_stats.verified}/{sg.verify_stats.sample_size} (window {sg.verify_stats.window}, min{' '}
+            {sg.verify_stats.min_success_rate}) · expand_ready={String(sg.verify_stats.expand_ready)}
+          </div>
+        ) : null}
+
         <div className="mt-2 text-sm text-slate-200">{st.write_enabled ? 'SUPERVISED WRITES ARMED' : 'READ-ONLY COMMISSIONING'}</div>
         <div className="text-[11px] font-mono text-slate-500 mt-1">
-          HVAC_BMS_WRITE_ENABLED must be 1 on the server · BMS WRITE: {st.write_enabled ? 'ENABLED' : 'DISABLED'}
+          HVAC_BMS_WRITE_ENABLED must be 1 · BMS WRITE: {st.write_enabled ? 'ENABLED' : 'DISABLED'} · allowlist:{' '}
+          {(sg.allowlist || ['ZONE-01.cooling_setpoint']).join(', ')}
         </div>
         <div className="flex flex-wrap gap-2 pt-2">
           <button
             type="button"
             className="btn-primary"
-            disabled={!livePlant || mapRows.length === 0}
-            title="Requires Live BMS, mappings, HVAC_BMS_WRITE_ENABLED=1, and safety review"
-            onClick={() =>
+            disabled={!livePlant || mapRows.length === 0 || !sgOkToEnable}
+            title={
+              !sgOkToEnable
+                ? 'Pass Stage G checklist first (ZONE-01.cooling_setpoint only; arming comes next)'
+                : 'Requires Live BMS, writable mapping, HVAC_BMS_WRITE_ENABLED=1, and operator confirm'
+            }
+            onClick={() => {
+              const ok = window.confirm(
+                'Enable supervised BMS writes?\n\nFirst allowed point: ZONE-01.cooling_setpoint only.\nApply still requires operator Approve → Rule Engine → Verify.',
+              );
+              if (!ok) return;
               hvacFetch('/api/platform/bms/write-enable', {
                 method: 'POST',
                 body: JSON.stringify({ confirm: true }),
               }).then(async (res) => {
                 const body = await res.json();
-                setMessage(body.message || body.code || body.status);
+                setMessage(body.message || body.code || body.status || body.detail?.message);
                 qc.invalidateQueries();
-              })
-            }
+              });
+            }}
           >
             ENABLE WRITES
           </button>
@@ -333,6 +404,67 @@ export default function BmsPage() {
             DISABLE WRITES
           </button>
         </div>
+      </section>
+
+      <section className="glass-card p-4 space-y-3">
+        <div className="text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">Supervised write</div>
+        <p className="text-[12px] text-slate-400">
+          Apply an existing Safe RL / O* <span className="font-mono">control_commands</span> row — PROPOSED → APPROVED → APPLY → VERIFY →
+          ROLLBACK.
+        </p>
+        {!activeCmd ? (
+          <EmptyState
+            title="No allowlisted command"
+            detail="Run Safe RL recommend (or O*) to create a PROPOSED command for ZONE-01.cooling_setpoint."
+          />
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] font-mono text-slate-300">
+              <div>command_id: {activeCmd.command_id}</div>
+              <div>status: {activeCmd.status}</div>
+              <div>point: {activeCmd.point_id}</div>
+              <div>
+                {activeCmd.old_value} → {activeCmd.new_value} ({activeCmd.opportunity || '—'})
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={String(activeCmd.status || '').toUpperCase() !== 'PROPOSED'}
+                onClick={() => activeCmd.command_id && cmdAction(activeCmd.command_id, 'approve')}
+              >
+                APPROVE
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={String(activeCmd.status || '').toUpperCase() !== 'APPROVED' || !sgOk || !st.write_enabled}
+                onClick={() => activeCmd.command_id && cmdAction(activeCmd.command_id, 'apply')}
+              >
+                APPLY
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={!['APPLIED', 'VERIFYING', 'VERIFICATION_FAILED'].includes(String(activeCmd.status || '').toUpperCase())}
+                onClick={() => activeCmd.command_id && cmdAction(activeCmd.command_id, 'verify')}
+              >
+                VERIFY
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={
+                  !['APPLIED', 'VERIFIED', 'VERIFICATION_FAILED', 'VERIFYING'].includes(String(activeCmd.status || '').toUpperCase())
+                }
+                onClick={() => activeCmd.command_id && cmdAction(activeCmd.command_id, 'rollback')}
+              >
+                ROLLBACK
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -568,9 +568,18 @@ def apply_command(command_id: str, confirm: bool = False) -> Dict[str, Any]:
     if not confirm and mode == "AUTO":
         raise PermissionError("CONFIRMATION_REQUIRED")
     classified = state.get("classified_telemetry") or {}
-    ok, reason, info = evaluate_dispatch(
+    from backend.rules.engine import evaluate as rule_engine_evaluate
+
+    verdict = rule_engine_evaluate(
         {
+            "opportunity_id": "O15",
             "id": "O15",
+            "action": "APPLY",
+            "point_id": cmd.get("point_id"),
+            "old_value": cmd.get("old_value"),
+            "new_value": cmd.get("new_value"),
+            "target_value": cmd.get("new_value"),
+            "current_value": cmd.get("old_value"),
             "source": classified.get("source"),
             "telemetry": {
                 "source": classified.get("source"),
@@ -579,16 +588,18 @@ def apply_command(command_id: str, confirm: bool = False) -> Dict[str, Any]:
                 "raw": classified.get("status"),
             },
             "supervisory": {"decision": "OPTIMIZE"},
-            "safety": {"status": "PASS" if state.get("safety_status") == "PASS" else state.get("safety_status")},
+            "decision": "OPTIMIZE",
+            "safety": {"status": "PASS" if state.get("safety_status") == "PASS" else state.get("safety_status"), "passed": state.get("safety_status") == "PASS"},
             "confidence": state.get("confidence"),
-            "current_value": cmd.get("old_value"),
-            "target_value": cmd.get("new_value"),
+            "approval_status": "APPROVED" if cmd.get("status") == "APPROVED" else "NOT_REQUIRED",
         }
     )
-    if not ok:
+    if verdict.get("verdict") != "APPROVED":
         set_status(command_id, "REJECTED")
-        audit("O15", "COMMAND_REJECTED", info.get("code") or "REJECTED", details={"command_id": command_id, "reason": reason})
+        reason = verdict.get("reason") or "Rule Engine REJECTED"
+        audit("O15", "COMMAND_REJECTED", verdict.get("code") or "REJECTED", details={"command_id": command_id, "reason": reason})
         raise ValueError(reason)
+    reason = verdict.get("reason") or "APPROVED"
     conflict = active_for_point(cmd.get("point_id"))
     if conflict and conflict.get("command_id") != command_id and conflict.get("status") in ("APPLYING", "APPLIED", "VERIFYING"):
         raise ValueError("CONFLICTING_COMMAND")

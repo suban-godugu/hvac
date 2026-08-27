@@ -109,6 +109,13 @@ async def plant():
     return bms.plant_overview()
 
 
+@router.get("/stage-g/status")
+async def stage_g_status(point_id: Optional[str] = None):
+    from backend.bms.stage_g import stage_g_status as _status
+
+    return _status(point_id)
+
+
 @router.post("/write-enable")
 async def write_enable(request: Request):
     try:
@@ -197,6 +204,86 @@ async def command_apply(req: DispatchApplyRequest):
             },
         )
     return result
+
+
+@safety_router.post("/commands/{command_id}/approve")
+async def command_approve(command_id: str):
+    from backend.agents.runtime.approval import approve_command
+
+    ok, reason, cmd = approve_command(command_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail={"code": reason, "message": reason, "command_id": command_id, "command": cmd})
+    return {"ok": True, "status": reason, "command_id": command_id, "command": cmd}
+
+
+@safety_router.post("/commands/{command_id}/apply")
+async def command_apply_existing(command_id: str):
+    """Stage G: apply an existing APPROVED control_commands row (Safe RL / O*)."""
+    from backend.agents.runtime.apply import apply_setpoint
+    from backend.agents.runtime.command import get_command
+    from backend.bms.stage_g import point_allowed, prerequisites_ok
+    from backend.services.platform_bms_service import platform_snapshot
+
+    cmd = get_command(command_id)
+    if not cmd:
+        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "Command not found", "command_id": command_id})
+    status = (cmd.get("status") or "").upper()
+    if status != "APPROVED":
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "NOT_APPROVED", "message": f"Command status is {status}; APPROVED required", "command": cmd},
+        )
+    point_id = str(cmd.get("point_id") or "")
+    if not point_allowed(point_id):
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "STAGE_G_POINT_NOT_ALLOWED", "message": f"{point_id} not on Stage G allowlist", "command": cmd},
+        )
+    gate = prerequisites_ok(point_id)
+    if not gate.get("ok"):
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "STAGE_G_PREREQS", "message": "Stage G prerequisites not met", "prerequisites": gate, "command": cmd},
+        )
+    new_value = cmd.get("new_value")
+    if new_value is None:
+        raise HTTPException(status_code=409, detail={"code": "MISSING_VALUES", "message": "new_value required", "command": cmd})
+
+    snap = platform_snapshot()
+    tel = snap.get("telemetry") or {}
+    context = {
+        "action": "APPLY",
+        "opportunity_id": cmd.get("opportunity"),
+        "point_id": point_id,
+        "old_value": cmd.get("old_value"),
+        "current_value": cmd.get("old_value"),
+        "new_value": float(new_value),
+        "target_value": float(new_value),
+        "approval_status": "APPROVED",
+        "mode": "SUPERVISED",
+        "source": tel.get("source"),
+        "telemetry": {
+            "source": tel.get("source"),
+            "quality": tel.get("quality"),
+            "age_seconds": tel.get("ageSeconds"),
+            "raw": tel.get("status"),
+        },
+        "supervisory": {"decision": "OPTIMIZE", "confidence": 0.99},
+        "safety": {"status": snap.get("safety"), "passed": snap.get("safety") == "PASS"},
+        "confidence": 0.99,
+        "decision": "OPTIMIZE",
+        "building_id": cmd.get("building_id"),
+        "equipment_id": cmd.get("equipment_id"),
+        "normalized": {"Indoor_Temp": None, "Occupancy": 0.5, "quality": tel.get("quality") or "GOOD"},
+        "schedule_hour": 12,
+    }
+    ok, reason = apply_setpoint(command_id, point_id, float(new_value), context)
+    if not ok:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": reason, "message": reason, "command_id": command_id, "command": get_command(command_id)},
+        )
+    return {"ok": True, "status": reason, "command_id": command_id, "command": get_command(command_id)}
 
 
 @safety_router.post("/commands/{command_id}/verify")

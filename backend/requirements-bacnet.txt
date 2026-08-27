@@ -1,0 +1,6 @@
+# Optional BACnet stacks for real-device Stage A (HVAC_BMS_LAB=0).
+# Lab path needs no install: set HVAC_BMS_LAB=1 with plant mode LIVE_BMS.
+#
+#   pip install -r backend/requirements-bacnet.txt
+#
+BAC0>=23.0.0

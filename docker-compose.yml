@@ -27,6 +27,8 @@ services:
       HVAC_CORS_ORIGINS: http://localhost:3000
       HVAC_BMS_MODE: simulation
       HVAC_BMS_WRITE_ENABLED: "0"
+      HVAC_EDGE_MODE: "0"
+      HVAC_CLOUD_URL: ""
     ports:
       - "8000:8000"
     depends_on:
@@ -39,6 +41,7 @@ services:
       DATABASE_URL: postgresql://hvac:hvac@postgres:5432/hvac
       HVAC_BMS_MODE: simulation
       HVAC_BMS_WRITE_ENABLED: "0"
+      HVAC_EDGE_MODE: "0"
     depends_on:
       - postgres
 
@@ -47,6 +50,59 @@ services:
     command: python -m backend.workers.job_worker
     environment:
       DATABASE_URL: postgresql://hvac:hvac@postgres:5432/hvac
+      HVAC_TELEMETRY_RETAIN_DAYS: "90"
+      HVAC_TELEMETRY_PURGE: "1"
+      HVAC_EDGE_MODE: "0"
+    depends_on:
+      - postgres
+
+  # Stage H4 — slim edge package (no frontend). Cloud optional.
+  #   docker compose --profile edge up postgres api control-worker job-worker
+  api-edge:
+    profiles: ["edge"]
+    build: .
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    environment:
+      HVAC_ENV: development
+      HVAC_START_CONTROL_WORKER: "0"
+      DATABASE_URL: postgresql://hvac:hvac@postgres:5432/hvac
+      HVAC_ALLOW_CREATE_ALL: "1"
+      HVAC_DEPLOYMENT_MODE: local
+      HVAC_EDGE_MODE: "1"
+      HVAC_CLOUD_URL: "http://127.0.0.1:9/unreachable"
+      HVAC_BMS_MODE: production
+      HVAC_BMS_LAB: "1"
+      HVAC_BMS_WRITE_ENABLED: "0"
+      HVAC_CORS_ORIGINS: "*"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  control-worker-edge:
+    profiles: ["edge"]
+    build: .
+    command: python -m backend.workers.control_entrypoint
+    environment:
+      DATABASE_URL: postgresql://hvac:hvac@postgres:5432/hvac
+      HVAC_EDGE_MODE: "1"
+      HVAC_CLOUD_URL: "http://127.0.0.1:9/unreachable"
+      HVAC_BMS_MODE: production
+      HVAC_BMS_LAB: "1"
+      HVAC_BMS_WRITE_ENABLED: "0"
+    depends_on:
+      - postgres
+
+  job-worker-edge:
+    profiles: ["edge"]
+    build: .
+    command: python -m backend.workers.job_worker
+    environment:
+      DATABASE_URL: postgresql://hvac:hvac@postgres:5432/hvac
+      HVAC_EDGE_MODE: "1"
+      HVAC_TELEMETRY_RETAIN_DAYS: "90"
+      HVAC_TELEMETRY_PURGE: "1"
+      HVAC_LSTM_RETRAIN_SECONDS: "86400"
     depends_on:
       - postgres
 

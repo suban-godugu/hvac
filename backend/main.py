@@ -220,14 +220,16 @@ async def health():
 @app.get("/api/readyz")
 @app.get("/api/ready")
 async def ready():
-    from backend.workers.watchdog import watchdog_status
+    from backend.workers.watchdog import ai_watchdog_status, watchdog_status
     from backend.bms.connection_manager import get_connection_manager
     from backend.services.canonical_telemetry_service import latest_points
     from backend.services.hvac_safety_contract import is_safe_mode
+    from backend.services.edge_mode import edge_status
     from database.session import alembic_head_ok
 
     db_ok = database_ok()
     wd = watchdog_status()
+    ai = ai_watchdog_status()
     points = latest_points(limit=1)
     tel_ok = True
     if points:
@@ -241,6 +243,8 @@ async def ready():
         "migrations": "OK" if alembic_head_ok() else "DRIFT",
         "safeMode": is_safe_mode(),
         "watchdog": wd,
+        "ai_watchdogs": ai,
+        "edge": edge_status(),
     }
     ready_flag = db_ok
     return {

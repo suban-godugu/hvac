@@ -11,7 +11,7 @@ from backend.bms.command_writer import (
     simulated_writes_allowed,
     write_enabled_flag,
 )
-from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
+from backend.bms.connection_manager import get_connection_manager, is_simulation_mode, lab_mode_enabled
 from backend.bms.point_mapper import canonical_catalog, mapping_to_dict
 from backend.services.canonical_telemetry_service import latest_points
 from backend.services.hvac_safety_contract import STALE_SECONDS, classify_telemetry, is_demo_source, is_safe_mode
@@ -197,10 +197,17 @@ def platform_snapshot() -> Dict[str, Any]:
     elif str(tel.get("status") or "").upper() == "SIMULATED":
         tel = {**tel, "status": "NO_DATA"}
     site = _facility_and_weather()
+    try:
+        from backend.services.edge_mode import edge_status
+
+        edge = edge_status()
+    except Exception:
+        edge = {"edge_mode": False, "local_loop_ok": True}
     return {
         "safeMode": safe,
         "bmsConnected": connected,
         "plantMode": plant,
+        "edge": edge,
         "bms": {
             "status": bms_status,
             "protocol": health.protocol,
@@ -226,6 +233,7 @@ def platform_snapshot() -> Dict[str, Any]:
         "facility": site["facility"],
         "weather": site["weather"],
         "commissioning": "SUPERVISED" if physical_writes_allowed() else "READ_ONLY",
+        "labMode": lab_mode_enabled(),
     }
 
 
@@ -259,6 +267,7 @@ def bms_status() -> Dict[str, Any]:
         "status": snap["bms"]["status"],
         "plantMode": snap.get("plantMode"),
         "telemetry": snap.get("telemetry"),
+        "labMode": lab_mode_enabled(),
     }
 
 

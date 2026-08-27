@@ -1,9 +1,9 @@
-"""Canonical telemetry ingest + latest-read. Never coerce missing to 0."""
+"""Canonical telemetry ingest + latest-read + time-window query. Never coerce missing to 0."""
 from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from backend.services.hvac_safety_contract import (
     STALE_SECONDS,
@@ -13,10 +13,15 @@ from backend.services.hvac_safety_contract import (
     normalize_telemetry_source,
     accepts_telemetry_source,
 )
+from backend.services.timeseries_buffer import covers as buffer_covers
+from backend.services.timeseries_buffer import parse_time
+from backend.services.timeseries_buffer import push as buffer_push
+from backend.services.timeseries_buffer import window_many as buffer_window_many
 from backend.services.ttl_cache import cache_clear, cache_get, cache_set
 
 _LATEST_TTL = float(os.getenv("HVAC_LATEST_POINTS_TTL", "2.5"))
 _CACHE_PREFIX = "latest_points"
+_WINDOW_LIMIT_CAP = 5000
 
 LIVE_SOURCES = {"LIVE_BMS", "BMS"}
 
@@ -60,12 +65,14 @@ def record_point(
         age_seconds=age,
     )
     db = SessionLocal()
+    committed = False
     try:
         db.add(row)
         db.commit()
         db.refresh(row)
         payload = as_contract(row)
         cache_clear(_CACHE_PREFIX)
+        committed = True
     except Exception:
         db.rollback()
         payload = {
@@ -79,10 +86,17 @@ def record_point(
             "source": src,
             "quality": q,
             "age_seconds": age,
-            "classified": classify_telemetry({"quality": q, "age_seconds": age, "value": value, "raw": q, "source": src}, src)["status"],
+            "classified": classify_telemetry(
+                {"quality": q, "age_seconds": age, "value": value, "raw": q, "source": src}, src
+            )["status"],
         }
     finally:
         db.close()
+    if committed:
+        try:
+            buffer_push(point_id, payload)
+        except Exception:
+            pass
     return payload
 
 
@@ -167,21 +181,65 @@ def find_point_by_suffix(points: List[Dict[str, Any]]) -> Callable[..., Optional
     return find
 
 
+def _normalize_point_ids(
+    point_id: Optional[str] = None,
+    point_ids: Optional[Sequence[str]] = None,
+) -> List[str]:
+    out: List[str] = []
+    if point_ids:
+        for p in point_ids:
+            if p is None:
+                continue
+            for part in str(p).split(","):
+                s = part.strip()
+                if s and s not in out:
+                    out.append(s)
+    if point_id:
+        for part in str(point_id).split(","):
+            s = part.strip()
+            if s and s not in out:
+                out.append(s)
+    return out
+
+
 def query_telemetry(
     building_id: Optional[str] = None,
     point_id: Optional[str] = None,
+    point_ids: Optional[Sequence[str]] = None,
     asset_id: Optional[str] = None,
     opportunity_id: Optional[str] = None,
+    t0: Optional[Union[datetime, str, float]] = None,
+    t1: Optional[Union[datetime, str, float]] = None,
     limit: int = 200,
+    prefer_buffer: bool = True,
 ) -> List[Dict[str, Any]]:
+    """Time-ordered telemetry window. Prefer in-memory ring buffer when it covers [t0, t1]."""
     del opportunity_id  # reserved for join to opportunity point maps
+    pids = _normalize_point_ids(point_id, point_ids)
+    start = parse_time(t0)
+    end = parse_time(t1)
+    lim = max(1, min(int(limit or 200), _WINDOW_LIMIT_CAP))
+
+    if prefer_buffer and pids and (start is not None or end is not None) and buffer_covers(pids, start, end):
+        merged: List[Dict[str, Any]] = []
+        for _pid, rows in buffer_window_many(pids, start, end).items():
+            for r in rows:
+                if not accepts_telemetry_source(r.get("source")):
+                    continue
+                if asset_id and (r.get("asset_id") or r.get("equipment_id")) not in (asset_id,):
+                    continue
+                if building_id and r.get("building_id") not in (None, building_id):
+                    continue
+                merged.append(dict(r))
+        merged.sort(key=lambda r: parse_time(r.get("timestamp")) or datetime.min)
+        return merged[:lim]
+
     from database.session import SessionLocal
     from database.models_platform import CanonicalTelemetryDB
+    from sqlalchemy import or_
 
     db = SessionLocal()
     try:
-        from sqlalchemy import or_
-
         q = db.query(CanonicalTelemetryDB)
         if building_id:
             q = q.filter(
@@ -190,11 +248,25 @@ def query_telemetry(
                     CanonicalTelemetryDB.building_id.is_(None),
                 )
             )
-        if point_id:
-            q = q.filter(CanonicalTelemetryDB.point_id == point_id)
+        if len(pids) == 1:
+            q = q.filter(CanonicalTelemetryDB.point_id == pids[0])
+        elif len(pids) > 1:
+            q = q.filter(CanonicalTelemetryDB.point_id.in_(pids))
         if asset_id:
             q = q.filter(CanonicalTelemetryDB.asset_id == asset_id)
-        rows = q.order_by(CanonicalTelemetryDB.timestamp.desc()).limit(limit).all()
-        return [as_contract(r) for r in rows]
+        if start is not None:
+            q = q.filter(CanonicalTelemetryDB.timestamp >= start)
+        if end is not None:
+            q = q.filter(CanonicalTelemetryDB.timestamp <= end)
+        if start is not None or end is not None or pids:
+            rows = q.order_by(CanonicalTelemetryDB.timestamp.asc(), CanonicalTelemetryDB.id.asc()).limit(lim).all()
+        else:
+            rows = q.order_by(CanonicalTelemetryDB.timestamp.desc()).limit(lim).all()
+        out: List[Dict[str, Any]] = []
+        for r in rows:
+            if not accepts_telemetry_source(r.source):
+                continue
+            out.append(as_contract(r))
+        return out
     finally:
         db.close()

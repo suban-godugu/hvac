@@ -1,8 +1,8 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 
 class ThermalModelLearner:
-    """Holds prior thermal rates. Does not report a fitted R² without a fit."""
+    """Holds prior thermal rates. Prefer Stage C RLS zone_thermal when READY."""
 
     def __init__(self):
         self.pull_down_rate_deg_per_hr = 1.45
@@ -28,3 +28,12 @@ class ThermalModelLearner:
             "note": "Prior rates only; R² is not computed without a fitted model.",
             "total_samples": self.learning_samples_count,
         }
+
+    def rls_zone_thermal_snapshot(self, zone_id: str = "ZONE-01") -> Optional[Dict[str, Any]]:
+        """Read-only adapter to Stage C RLS (no setpoint writes)."""
+        try:
+            from backend.ai.rls.service import params_for
+
+            return params_for("zone_thermal", zone_id=zone_id)
+        except Exception:
+            return None

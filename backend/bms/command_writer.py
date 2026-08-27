@@ -150,12 +150,52 @@ def _simulated_write(point_id: str, value: float, priority: int = 10) -> WriteOu
     )
 
 
-def write_point(point_id: str, value: float, priority: int = 10) -> WriteOutcome:
+def _rule_context(point_id: str, value: float, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Build Rule Engine context; prefer caller context over hardcoded NOT_REQUIRED."""
+    ctx = dict(context or {})
+    ctx.setdefault("point_id", point_id)
+    ctx["new_value"] = float(value)
+    ctx["target_value"] = float(value)
+    ctx.setdefault("action", "WRITE")
+    ctx.setdefault("decision", "OPTIMIZE")
+    ctx.setdefault("safety", {"status": "PASS", "passed": True})
+    ctx.setdefault("confidence", 0.9)
+    if ctx.get("approval_status") is None:
+        ctx["approval_status"] = "NOT_REQUIRED"
+    if ctx.get("old_value") is None and ctx.get("current_value") is not None:
+        ctx["old_value"] = ctx.get("current_value")
+    return ctx
+
+
+def _stage_g_guard(point_id: str, value: float) -> Optional[WriteOutcome]:
+    from backend.bms.stage_g import point_allowed, stage_g_enforce
+
+    if not stage_g_enforce():
+        return None
+    if not point_allowed(point_id):
+        return _deny(
+            "STAGE_G_POINT_NOT_ALLOWED",
+            f"Stage G allowlist rejects {point_id}. Only HVAC_STAGE_G_WRITABLE_POINTS may be written.",
+            point_id,
+            value,
+        )
+    return None
+
+
+def write_point(point_id: str, value: float, priority: int = 10, context: Optional[Dict[str, Any]] = None) -> WriteOutcome:
     from backend.bms.connection_manager import get_connection_manager, is_simulation_mode
     from backend.services.hvac_safety_contract import is_safe_mode
 
     if is_simulation_mode():
         if simulated_writes_allowed():
+            from backend.rules.engine import evaluate as rule_engine_evaluate
+
+            verdict = rule_engine_evaluate(_rule_context(point_id, value, context))
+            if verdict.get("verdict") != "APPROVED":
+                return _deny(str(verdict.get("code") or "RULE_ENGINE"), str(verdict.get("reason") or "Rejected"), point_id, value)
+            blocked = _stage_g_guard(point_id, value)
+            if blocked is not None:
+                return blocked
             return _simulated_write(point_id, value, priority)
         return _deny("SIMULATION_BLOCKED", "Dataset mode cannot write to a production BMS.", point_id, value)
     if is_safe_mode():
@@ -167,6 +207,17 @@ def write_point(point_id: str, value: float, priority: int = 10) -> WriteOutcome
             point_id,
             value,
         )
+
+    from backend.rules.engine import evaluate as rule_engine_evaluate
+
+    verdict = rule_engine_evaluate(_rule_context(point_id, value, context))
+    if verdict.get("verdict") != "APPROVED":
+        return _deny(str(verdict.get("code") or "RULE_ENGINE"), str(verdict.get("reason") or "Rejected"), point_id, value)
+
+    blocked = _stage_g_guard(point_id, value)
+    if blocked is not None:
+        return blocked
+
     ident, err, _dir = resolve_write_target(point_id)
     if err is not None:
         return err
@@ -180,7 +231,22 @@ def write_point(point_id: str, value: float, priority: int = 10) -> WriteOutcome
 
 
 def write_points(writes: List[Dict[str, Any]]) -> List[WriteOutcome]:
-    return [write_point(str(w.get("point_id") or ""), float(w.get("value") or 0), int(w.get("priority") or 10)) for w in writes]
+    from backend.bms.stage_g import stage_g_enforce
+
+    if stage_g_enforce() and len(writes) > 1:
+        return [
+            _deny(
+                "STAGE_G_SINGLE_POINT_ONLY",
+                "Stage G allows one supervised write at a time.",
+                str(w.get("point_id") or ""),
+                float(w.get("value") or 0),
+            )
+            for w in writes
+        ]
+    return [
+        write_point(str(w.get("point_id") or ""), float(w.get("value") or 0), int(w.get("priority") or 10))
+        for w in writes
+    ]
 
 
 def enable_supervised_writes(*, confirm: bool = False) -> Dict[str, Any]:

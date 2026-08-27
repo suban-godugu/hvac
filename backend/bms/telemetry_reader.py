@@ -94,6 +94,13 @@ def poll_once(include_unmapped: bool = True) -> List[Dict[str, Any]]:
                 )
     finally:
         db.close()
+    if out:
+        try:
+            from backend.ai.rls.runner import tick_debounced
+
+            tick_debounced()
+        except Exception:
+            pass
     return out
 
 

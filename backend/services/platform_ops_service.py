@@ -27,6 +27,7 @@ def record_control_audit(
     reason: Optional[str] = None,
     request_id: Optional[str] = None,
     building_id: Optional[str] = None,
+    payload_json: Any = None,
 ) -> str:
     rid = request_id or uuid.uuid4().hex
     user = user or {}
@@ -48,6 +49,7 @@ def record_control_audit(
                 telemetry_status=telemetry_status,
                 approval_status=approval_status,
                 reason=reason,
+                payload_json=payload_json,
             )
         )
         db.commit()
